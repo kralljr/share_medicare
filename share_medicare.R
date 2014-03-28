@@ -41,6 +41,11 @@ for(i in 1 : nsources) {
 		vec[i] <- length(which(temp == T))
 		
 }
+#how many sources for each monitors
+lens <- vector()
+for(i in  1: length(share)) {
+	lens[i] <- length(share[[i]])
+}
 
 
 
@@ -191,74 +196,83 @@ graphics.off()
 
 #######
 # Plot for thresholds
-
-
-
-#plot for each threshold
+#create sequence of thresholds
 allthres <- seq(pi/4, pi/2, length = 10)
-pdf("map_east_sourcesorder_allthres.pdf", height = 7)
+
+
+pdf("map_east_sourcesorder_medicare_allthres.pdf", height = 7)
 j <- 1
-	print(j)
-	par(mfrow = c(3, 3))
+print(j)
+par(mfrow = c(3, 3))
 
+	
+set.seed(9268)
+#get large threshold to start
+pvd.east <- domatchSIM(restrict.data = data.rr, threli = 1, 
+	usedata = T, thresang = 1.5)
+share <- pvd.east[[3]]
+Sources <- pvd.east[[4]]
+whinf <- which(is.infinite(Sources))
+	
+if(length(whinf) > 0) {
+	Sources <- Sources[-whinf]
+}
 
+cols <- brewer.pal(8, "Dark2")
+cols2 <- brewer.pal(8, "Set1")
+cols <- c(cols, cols2, cols)
+if(length(Sources) > 0) {
 	
-	set.seed(9268)
-	pvd.east <- domatchSIM(restrict.data = data.east.cc, threli = 1, 
-		usedata = T, thresang = 1.5)
-	share <- pvd.east[[3]]
-	Sources <- pvd.east[[4]]
-	whinf <- which(is.infinite(Sources))
-	
-	if(length(whinf) > 0) {
-		Sources <- Sources[-whinf]
-	}
-	
-	cols <- brewer.pal(8, "Dark2")
-	cols2 <- brewer.pal(8, "Set1")
-	cols <- c(cols, cols2, cols)
-	if(length(Sources) > 0) {
+	#for each source
 	for(i in 1 : length(Sources)) {
 		if(!is.infinite(Sources[i])) {
 			
-			
+		#plot source name
 		plot(1, 1, type = "n", axes = F, ylab = "", xlab = "")
 		mtext(paste0("source = ", names[i]))		
 		
+		#for each threshold
 		for(k in 1 : length(allthres)) {
 			
-			threang <- round(allthres[k] * 180 / pi, 2)
-
+			
+	
+			#map threshold
 			map("state", fill = TRUE, col = "grey90",
-			ylim = c(37, 45), xlim = c(-90, -69),
-			mar = c(0, 2, 0, 2), oma = c(0,0,0,0))
-				# main = )
-			# mtext(paste0("Source = ", Sources[i]))	
+				ylim = c(37, 45), xlim = c(-90, -69),
+				mar = c(0, 2, 0, 2), oma = c(0,0,0,0))
 			map.axes()
 	
+			#add threshold to map
+			threang <- round(allthres[k] * 180 / pi, 2)
 			mtext(paste0("thresh=", threang))
 		
-		
+			# SHARE for threshold
 			set.seed(9268)
-			pvd.east <- domatchSIM(restrict.data = data.east.cc, threli = 1, 
+			pvd.east <- domatchSIM(restrict.data = data.rr, 
+				threli = 1, 
 				usedata = T, thresang = allthres[k])
 			share <- pvd.east[[3]]
 			Sources <- pvd.east[[4]]	
 					
+					
+			#get monitors with source		
 			monsS <- sapply(share, whichS, num = i)
 			monsS <- which(monsS == 1)
 			print(length(monsS))
-			if(length(monsS) != nrow(monsNEll)) {
-				points(monsNEll[-monsS, c(2, 1)], col = "grey40", pch = 1, cex = .8)
+			
+			
+			#plot monitors
+			if(length(monsS) != nrow(monsKEEP1)) {
+				points(monsKEEP1[-monsS, c(2, 1)], 
+					col = "grey40", pch = 1, cex = .8)
 			}
-			points(monsNEll[monsS, c(2, 1)], col = 1, pch = 16, cex = 1)
+			points(monsKEEP1[monsS, c(2, 1)], col = 1, 
+				pch = 16, cex = 1)
 			}
 		}
 	}
-	
-	}else{
-		print(allthres[j])
-		}
+
+}
 
 graphics.off()
 
@@ -266,9 +280,4 @@ graphics.off()
 
 
 
-#how many sources for each monitors
-lens <- vector()
-for(i in  1: length(share)) {
-	lens[i] <- length(share[[i]])
-}
 
