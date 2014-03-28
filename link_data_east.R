@@ -79,12 +79,47 @@ monsKEEP <- monsKEEP[which(substr(monsKEEP$monname, 1, 5) %in% all.fips), ]
 
 #################
 # Find correct days
+#for each monitors
+
+keep <- vector(, length = nrow(monsKEEP))
+datall <- list()
+unmons <- list()
+for(i in 1 : nrow(monsKEEP)) {
+	
+	#get speciation data
+	monname <- as.character(monsKEEP[i, 3])
+	dat <- specmons[[monname]]
+	
+	#limit to columns of interest
+	dat <- get.cols(dat, monname)
+	
+	#get result formatted
+	nc <- ncol(dat[[4]])
+	temp <- data.frame(dat[[4]][, nc], 
+		dat[[3]], dat[[4]][, -nc])
+	colnames(datall)[1 : 2] <- c("Date", "PM2.5")
+	montemp <- dat[[2]]
+	
+	#get complete cases
+	cc <- complete.cases(temp)
+	datall[[i]] <- temp[cc, ]
+	unmons[[i]] <- montemp[cc]
+	
+	#ensure enough data
+	if(class(dat) == "data.frame"){	
+		if(nrow(datall[[i]]) > 50) {
+			keep[i] <- 1
+		}
+	}
+	
+}
+monsKEEP <- monsKEEP[which(keep == 1), ]
+datall <- datall[which(keep == 1), ]
+unmons <- unmons[which(keep == 1)]
 
 
 
-
-
-
+save(monsKEEP, datall, unmons, file = "speciation_medicare.RData")
 
 
 
