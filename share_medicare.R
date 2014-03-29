@@ -229,7 +229,7 @@ if(length(Sources) > 0) {
 			
 		#plot source name
 		plot(1, 1, type = "n", axes = F, ylab = "", xlab = "")
-		mtext(paste0("source = ", names[i]))		
+		mtext(paste0("source = ", names1[i]))		
 		
 		#for each threshold
 		for(k in 1 : length(allthres)) {
@@ -263,10 +263,10 @@ if(length(Sources) > 0) {
 			
 			#plot monitors
 			if(length(monsS) != nrow(monsKEEP1)) {
-				points(monsKEEP1[-monsS, c(2, 1)], 
+				points(monsKEEP1[-monsS, ], 
 					col = "grey40", pch = 1, cex = .8)
 			}
-			points(monsKEEP1[monsS, c(2, 1)], col = 1, 
+			points(monsKEEP1[monsS, ], col = 1, 
 				pch = 16, cex = 1)
 			}
 		}
