@@ -197,7 +197,7 @@ graphics.off()
 #######
 # Plot for thresholds
 #create sequence of thresholds
-allthres <- seq(pi/4, pi/2, length = 10)
+allthres <- seq(pi/8, pi/2, length = 10)
 
 
 pdf("map_east_sourcesorder_medicare_allthres.pdf", height = 7)
