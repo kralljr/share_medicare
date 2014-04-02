@@ -14,6 +14,9 @@ load(file.path(dir1, "speciation_medicare.RData"))
 
 
 
+library(Hmisc)
+
+
 ########
 # perform SHARE
 data.rr <- lapply(datall, function(x) {
@@ -32,13 +35,26 @@ Sources <- pvd.east[[4]]
 
 
 
+#####
+# get info about data
+length(data.rr)
+len <- vector(, length = length(data.rr))
+for(i in 1 : length(data.rr)) {
+	len[i] <- nrow(data.rr[[i]])
+}
+
+
 #how many sites/source
 nsources <- length(Sources[-which(is.infinite(Sources))])
 vec <- vector()
+vec2 <- vec
 for(i in 1 : nsources) {
 
 		temp <- sapply(share, function(x) i %in% x)
-		vec[i] <- length(which(temp == T))
+		names(temp) <- names(monsKEEP2)
+		temp2 <- which(temp == T)
+		vec[i] <- length(temp2)
+		vec2[i] <- length(unique(names(temp2)))
 		
 }
 #how many sources for each monitors
@@ -63,13 +79,13 @@ n2 <- vector()
 for(i in 1 : nsources) {
 	regs <- sort(reg[, i], decreasing = T)
 	nr <- names(regs)[which(regs  > 0.4)]
-	n1[i] <- paste(nr, collapse = "/")
+	n1[i] <- paste(capitalize(nr), collapse = ", ")
 	regs <- rev(regs)
 	nr <- names(regs)[which(regs  < -0.4)]
-	n2[i] <- paste(nr, collapse = "/")
+	n2[i] <- paste(capitalize(nr), collapse = ", ")
 }
 
-cbind(paste(n1, n2), vec)
+xtab <- data.frame(vec, vec2, paste(n1, n2))
 
 
 
