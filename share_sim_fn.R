@@ -90,9 +90,10 @@ createdat <- function(nr, vec, sources, cm, sd) {
 # unequal is number of monitors for each subregion if unequal
 # days is number of days for each monitor if days
 outerdat <- function(nmons, reps, ndays = 1000, PCs, keeps, 
-	cms, sds, unequal = NULL, days = NULL) {
+	cms, sds, unequal = NULL, days = NULL, sourceout = NULL) {
 		
 	datnew <- list()
+	source <- list()
 	l <- 1
 	
 	#for each monitor
@@ -106,6 +107,7 @@ outerdat <- function(nmons, reps, ndays = 1000, PCs, keeps,
 		#create data and save
 		temp <- createdat(ndays, PCs, keeps[[l]], cms, sds)
 		datnew[[i]] <- temp[[1]]
+		source[[i]] <- temp[[1]]
 		
 		#update subregion
 		reps1 <- ifelse(!is.null(unequal), unequal, reps)
@@ -113,7 +115,12 @@ outerdat <- function(nmons, reps, ndays = 1000, PCs, keeps,
 	}
 	
 	
-	datnew
+	out <- datnew
+	
+	if(!is.null(sourceout)) {
+		out <- list(datnew, sourceout)
+	}
+	out
 }
 
 
@@ -205,6 +212,76 @@ outerSIM <- function(names, nmons, reps, ndays, PCs, keeps,
 	
 	#summarize
 	out <- colSums(matches) / colSums(lens)
+
+	
+}
+
+
+
+#### Function to simulate hospitalization data
+# nreps is number of simulations
+# sources is matrix of source concentrations
+# betas is vector of associations
+# int is intercept
+hospdat <- function(nreps, sources, betas, int = 5) {
+	y <- list()
+	
+	#for each monitor
+	for(i in 1 : length(sources)) {
+		#get mean for poisson
+		lincomb <- 5 + t(as.matrix(betas)) %*% t(sources)
+		mean <- exp(lincomb)
+		
+		#simulate y data
+		y[[i]] <- matrix(rpois(nreps * nrow(sources), mean), 
+			ncol = nreps, byrow = T)
+	}
+	
+	y
+}
+
+
+
+
+
+#### Function to simulate mortality effects
+outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps, 
+		cms, sds, nreps, betas, unequal = NULL, days = NULL, threli = 1,
+		thresang = pi/4, int = NULL) {
+	
+	#create dataset
+	data <- outerdat(nmons, reps, ndays, PCs, keeps, 
+		cms, sds, unequal, days, source = T)
+	data <- data[[1]]
+	source <- data[[2]]	
+		
+	#perform SHARE
+	dms <- domatchSIM(restrict.data = data, threli = threli, 
+		usedata = T, thresang = thresang)
+	share <- dms[[3]]
+	reg <- dms[[1]][[1]]
+	
+		
+	#perform mAPCA
+	mapca <- as.matrix(spatial.apca(dat = data, lim = 50)[[6]][[2]]$load)
+
+
+	#get hospiatlization data
+	y <- hospdat(nreps, source, betas, int = 5)
+
+	
+	#match share to PCs
+	match1 <- as.vector(solve_LSAP(calc.dists(PCs, reg)))
+	regnames1 <- names[match1]
+	
+	
+	#match mAPCA to PCs
+	match1 <- as.vector(solve_LSAP(calc.dists(PCs, mapca)))
+	regnames2 <- names[match1]
+
+
+
+
 
 	
 }
