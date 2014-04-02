@@ -107,7 +107,7 @@ outerdat <- function(nmons, reps, ndays = 1000, PCs, keeps,
 		#create data and save
 		temp <- createdat(ndays, PCs, keeps[[l]], cms, sds)
 		datnew[[i]] <- temp[[1]]
-		source[[i]] <- temp[[1]]
+		source[[i]] <- temp[[2]]
 		
 		#update subregion
 		reps1 <- ifelse(!is.null(unequal), unequal, reps)
@@ -118,7 +118,7 @@ outerdat <- function(nmons, reps, ndays = 1000, PCs, keeps,
 	out <- datnew
 	
 	if(!is.null(sourceout)) {
-		out <- list(datnew, sourceout)
+		out <- list(datnew, source)
 	}
 	out
 }
@@ -223,18 +223,17 @@ outerSIM <- function(names, nmons, reps, ndays, PCs, keeps,
 # sources is matrix of source concentrations
 # betas is vector of associations
 # int is intercept
-hospdat <- function(nreps, sources, betas, int = 5) {
-	y <- list()
+hospdat <- function(sources, betas, share, int = 5) {
 	
+	y <- list()
 	#for each monitor
 	for(i in 1 : length(sources)) {
 		#get mean for poisson
-		lincomb <- 5 + t(as.matrix(betas)) %*% t(sources)
+		lincomb <- 5 + t(as.matrix(betas[share[[i]]])) %*% t(sources[[i]])
 		mean <- exp(lincomb)
 		
 		#simulate y data
-		y[[i]] <- matrix(rpois(nreps * nrow(sources), mean), 
-			ncol = nreps, byrow = T)
+		y[[i]] <- rpois(nrow(sources[[i]]), mean)
 	}
 	
 	y
@@ -246,14 +245,49 @@ hospdat <- function(nreps, sources, betas, int = 5) {
 
 #### Function to simulate mortality effects
 outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps, 
-		cms, sds, nreps, betas, unequal = NULL, days = NULL, threli = 1,
-		thresang = pi/4, int = NULL) {
+		cms, sds, etas, unequal = NULL, days = NULL, threli = 1,
+		thresang = pi/4, int = 5) {
 	
 	#create dataset
-	data <- outerdat(nmons, reps, ndays, PCs, keeps, 
-		cms, sds, unequal, days, source = T)
-	data <- data[[1]]
-	source <- data[[2]]	
+	temp <- outerdat(nmons, reps, ndays, PCs, keeps, 
+		cms, sds, unequal, days, sourceout = T)
+	data <- temp[[1]]
+	source <- temp[[2]]	
+	
+	#get all keeps
+	shareT <- list()
+	l <- 1
+	for(i in 1 : length(data)) {
+		shareT[[i]] <- keeps[[l]]
+		
+		reps1 <- ifelse(!is.null(unequal), unequal, reps)
+		l <- switchfun(reps1, i, l)	
+	}
+	
+	
+	#get IQR
+	iqrsALL <- lapply(source, function(x) apply(x, 2, IQR))
+	iqrs <- vector()
+	for(i in 1 : length(names)) {
+		
+		wh1 <- sapply(shareT, function(x) {
+				ifelse(i %in% x, which(x == i), 0)})
+		iqrs1 <- iqrsALL[which(wh1 > 0)]
+		wh1 <- wh1[which(wh1 > 0)]	
+		
+		holds <-  vector()
+		if(length(wh1))
+		for(j in 1 : length(wh1)) {
+			holds[j] <- iqrs1[[j]][wh1[j]]
+		}	
+				
+		iqrs[i] <- median(holds)
+		
+	}
+	names(iqrs) <- names
+	
+	
+	
 		
 	#perform SHARE
 	dms <- domatchSIM(restrict.data = data, threli = threli, 
@@ -263,11 +297,35 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 	
 		
 	#perform mAPCA
-	mapca <- as.matrix(spatial.apca(dat = data, lim = 50)[[6]][[2]]$load)
+	mapca <- spatial.apca(dat = data, lim = 50)
+	mapcasource <- mapca[[1]][[2]]
+	mapca <- as.matrix(mapca[[6]][[2]]$load)
+	
+	
+	#apply APCA
+	apca <- list()
+	for(i in 1 : length(data)) {
+		nf1 <- length(share[[i]])
+		temp <- abspca(data[[i]], nfactors = nf1)
+		# wsds0 <- which(apply(data[[i]], 2, sd) == 0)
+		# pc <- temp[[4]]
+		# dat <- data[[i]]
+		# if(length(wsds0) > 0) {
+			# pc <- pc[-wsds0, ]
+			# dat <- dat[, -wsds0]
+		# }
+		# vars <- diag(cov(dat %*% solve(cov(dat)) %*% pc))
+		# vara <- vars / apply(temp[[1]], 2, var)
+		# temp2 <- sweep(temp[[1]], 2, sqrt(vara), "*")
+		# shifts <- (1 - vara) * apply(temp[[1]], 2, mean)
+		# apca[[i]]  <- sweep(temp2, 2, shifts, "+")
+		apca[[i]] <- temp[[1]]
+	}
 
 
 	#get hospiatlization data
-	y <- hospdat(nreps, source, betas, int = 5)
+	betas <- 1/iqrs * log(etas / 100 + 1)
+	y <- hospdat(source, betas, shareT, int)
 
 	
 	#match share to PCs
@@ -280,12 +338,82 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 	regnames2 <- names[match1]
 
 
+	tlnmAPCA <- tlnout(regnames2, y, mapcasource, "mapca")
+	tlnAPCA <- tlnout(regnames1, y, apca, "apca", share)
+	tlntruth <- tlnout(names, y, source, "truth", shareT)
 
-
-
+	#match results
+	tlnAPCA <- tlnAPCA[match(rownames(tlntruth), rownames(tlnAPCA)), ]
+	tlnmAPCA <- tlnmAPCA[match(rownames(tlntruth), rownames(tlnmAPCA)), ]
 	
+	#get IQR increase
+	for(i in 1 : nrow(tlntruth)) {
+		tlnAPCA[i, ] <- percinc(tlnAPCA[i, ], scale = iqrs[i])
+		tlnmAPCA[i, ] <- percinc(tlnmAPCA[i, ], scale = iqrs[i])
+		tlntruth[i, ] <- percinc(tlntruth[i, ], scale = iqrs[i])
+	}
+	out <- list(tlntruth, tlnAPCA, tlnmAPCA)
+	names(out) <- c("truth", "APCA", "mAPCA")
+	out
 }
 
+
+
+
+tlnout <- function(unsources, y, sourceconc, type, share = NULL) {
+		
+		
+	#for each source
+	glmout <- matrix(nrow = length(unsources), ncol = 2)
+	colnames(glmout) <- c("est", "se")
+	rownames(glmout) <- unsources
+	
+	for(i in 1 : length(unsources)) {
+	
+		#for each monitor
+		glm <- matrix(ncol = 2, nrow = length(y))
+		l <- 1
+		for(j in 1 : length(y)) {
+		
+			#get source conc
+			if(type %in% c("truth", "apca")) {
+				share1 <- share[[j]]
+				
+				wh1 <- which(share1 == i)
+				if(length(wh1) > 0) {
+					sourceconc1 <- sourceconc[[j]][, wh1]
+				}else{
+					
+					sourceconc1 <- NULL
+				}
+			}else{
+				sourceconc1 <- sourceconc[[j]][, i]
+				
+			}
+			
+			if(!is.null(sourceconc1)) {
+				glm[j, ] <- summary(glm(y[[j]] ~ sourceconc1, 
+					family = "poisson"))$coef[-1, c(1, 2)]
+			}
+			
+
+		
+		}#end loop over monitors
+		
+	glm <- glm[complete.cases(glm),]
+	if(nrow(glm) > 1) {
+		
+		glmout[i, ] <- tlnise(Y = glm[, 1], V = glm[, 2]^2)$gamma[1:2]
+		
+	}else if(nrow(glm) == 1){
+		glmout[i, ] <- glm
+	}
+	
+	
+	}#end loop over sources
+	
+	glmout
+}
 
 
 
@@ -313,4 +441,36 @@ multsims <- function(nsims, names, nmons,
 	
 	list(outs, colMeans(outs))
 	
+}
+
+
+
+
+reorderout <- function(out, nr, sources) {
+	types <- c("Known", "SHARE", "mAPCA")
+	info <- rep("0", 3)
+	
+	dat <- rep(0, 4)
+	
+	for(j in 1 : length(out)) {
+		sim <- c("A", "B", "C", "D", "E")[j]
+		for(i in 1 : 3) {
+			d1 <- out[[j]][[i]]
+			lb <- d1[, 1] - 1.96 * d1[, 2]
+			ub <- d1[, 1] + 1.96 * d1[, 2]
+			
+			dat1 <- cbind(d1, lb, ub)
+			info1 <- cbind(rep(types[i], nr), sources, rep(sim, nr))
+			
+			dat <- rbind(dat, dat1)
+			info <- rbind(info, info1)
+		}
+	}
+		
+	dat <- dat[-1, ]
+	info <- info[-1, ]
+	
+	out <- data.frame(dat, info)
+	colnames(out) <- c("est", "se", "lb", "ub", "Type", "Source", "Sim")
+	out
 }
