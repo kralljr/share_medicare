@@ -71,14 +71,14 @@ sds <- rep(sqrt(mnvar[2, ]), 2)
 keeps <- list()
 #with all
 keeps[[1]] <- seq(1, nc)
-#minus 1
-keeps[[2]] <- seq(1, nc)[-c(1, 2)]
 #minus 2
-keeps[[3]] <- seq(1, nc)[-c(1, 2)]
+keeps[[2]] <- seq(1, nc)[-c(1, 2)]
+#minus 3 
+keeps[[3]] <- seq(1, nc)[-c(1, 2, 3)]
 #minus 3
-keeps[[4]] <- seq(1, nc)[-c(1, 2, 3)]
+keeps[[4]] <- seq(1, nc)[-c(1, 2, 4)]
 #minus 3
-keeps[[5]] <- seq(1, nc)[-c(1, 2, 3, 4)]
+keeps[[5]] <- seq(1, nc)[-c(1, 2, 5)]
 
 
 
@@ -126,7 +126,7 @@ keeps[[5]] <- seq(1, nc)[-c(1, 2, 3, 4)]
 #######
 #######
 #######
-ns <- 100
+ns <- 10
 nd <- 1000
 
 seeds1 <- c(3474, 4866, 3451, 4672, 9165, 2165)
@@ -160,8 +160,9 @@ simout[[4]] <- multsims(ns, names, 25, 25, ndays = nd,
 
 #unequal
 stops <- c(12, 15, 16, 20)
+#12, 3, 1, 4, 5
 set.seed(seeds1[5])
-simout[[5]]<- multsims(ns, names, 50, 0, ndays = nd, 
+simout[[5]]<- multsims(ns, names, 25, 0, ndays = nd, 
 	PCs = vec, keeps = keeps, 
 	cms = cms, sds = sds, unequal = stops)	
 	
@@ -176,8 +177,10 @@ simout[[6]] <- multsims(ns, names, 25, 5, ndays = nd,
 	
 
 
-
-sapply(simout, function(x) x[[2]])
+library(xtable)
+tabs <- t(sapply(simout, function(x) x[[2]]))
+rownames(tabs) <- c("25", "100", "5", "same", "unequal subregions", "different days")
+xtable(tabs)
 
 
 
