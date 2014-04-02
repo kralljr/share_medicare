@@ -3,7 +3,7 @@
 
 # set working directories
 dircode <- ("/Users/jennakrall/Dropbox/SpatialFA/rcode")
-dirplot <- ("/Users/jennakrall/Dropbox/SpatialFA/plot")
+dirplot <- ("/Users/jennakrall/Dropbox/SpatialFA/plots")
 medicare <- file.path(dircode, "medicare")
 
 
@@ -101,7 +101,7 @@ g1 <- g1 + theme(legend.justification=c(1,0), legend.position=c(1,0))
 
 
 
-pdf(file.path(dirplot, "hosp_sim.pdf"))
+pdf(file.path(dirplot, "hosp_sim.pdf"), height = 7, width = 10)
 g1
 graphics.off()
 
