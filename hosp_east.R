@@ -301,9 +301,83 @@ tlnmAPCAsw <- sapply(tlnmAPCA, function(x) x[switch], simplify = F)
 
 
 
+#####
+# compare APCA/mAPCA results
+#very similar
+apca <- round(pvd.east[[1]][[1]], 2)
+mAPCAout <- mAPCAall[[6]][[2]]$load[1:24, ]
+mapca <- round(mAPCAout[, switch], 2)
+colnames(apca) <- names1
+colnames(mapca) <- names1
+for(i in 1 : ncol(apca)) {
+	print(names1[i])
+	print(cbind(apca[, i], mapca[, i]))
+}
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+########
+########
+########
+########
+########
+########
+########
+########
+### PLOT RESULTS
+
+#get IQRs
+#mAPCA
+mapcaIQRs <- apply(sapply(mAPCA1[[1]], function(x) apply(x[, -1], 
+	2, IQR)), 1, median)
+
+
+#APCA
+apcaIQRs <- sapply(APCA1[[1]], function(x) apply(x[, -1], 
+	2, IQR, na.rm = T))
+sn <- sapply(apcaIQRs, function(x) substr(names(x), 7, 7))
+IQRs2 <- vector(, length = 9)
+for(i in 1 : 9) {
+	print(i)
+	source <- as.character(i)
+	whK <- sapply(sn, function(x) which(x == source))
+	wh0 <- sapply(whK, function(x) ifelse(length(x) == 0, 0, x))
+	
+	keeps <- 0
+	for(j in 1 : length(apcaIQRs)) {
+		if(wh0[j] != 0) {
+			add <- apcaIQRs[[j]][wh0[j]]
+			keeps <- c(keeps, add)
+		}
+	}
+	keeps <- keeps[-1]
+	IQRs2[i] <- median(keeps)
+}
+
+IQRs2
+IQRs1 <- mapcaIQRs[switch]
+
+names(IQRs2) <- names1
+names(IQRs1) <- names1
+
+iqrs <- apply(cbind(IQRs1, IQRs2), 1, mean, na.rm = T)
 
 
 
@@ -370,10 +444,15 @@ for(lagi in 1 : 3) {
 				tlnest[[wlen[m]]][[1]] <- matrix(rep(NA, 6), ncol = 2)
 			}
 		}
+		# #first, get only main results
 		tlns <- sapply(tlnest[[1]], function(x) {
 			if(!is.null(x)){
-				percinc(x[[1]][lagi, 1 : 2])
+				x[[1]][lagi, 1 : 2]
 			}else{ c(NA, NA)}})
+		for(j in 1 : ncol(tlns)) {
+			tlns[, j] <- 100 * (exp(tlns[, j] *  iqrs[j]) - 1)
+		}
+
 		tlns <- tlns[, keeps]
 	
 		lb <- tlns[1,] - 1.96 * tlns[2,]
@@ -418,8 +497,8 @@ colnames(tlnoutall) <- c("est", "lb", "ub", "lag", "source", "type")
 
 pd <- position_dodge(.4)
 tln2 <- tlnoutall[complete.cases(tlnoutall), ]
-lb1 <- -10
-ub1 <- 11
+lb1 <- -1
+ub1 <- 2
 tln2$type <- factor(tln2$type, levels = c("APCA", "mAPCAsw"), 
 	labels = c("SHARE", "mAPCA"))
 ubsind <- ifelse(tln2$ub > ub1, 1, 0)
@@ -443,14 +522,13 @@ names2 <- names1
 # names2 <- names2[1 : 5]
 tln3$source <- factor(tln3$source, levels = names2)
 
-s1 <- c("P/V", "As/Se/Br")
-s1 <- c("Salt", "Traffic")
+s1 <- c("Metals", "Traffic", "Residual oil", "Soil", "Salt", "Sec. Sulfate")
 # tln3 <- tln3[-which(tln3$source %in% s1), ]
 tln3 <- tln3[which(tln3$source %in% s1), ]
 tln3$source <- factor(tln3$source, levels = s1)
 
 
-tln3 <- tln2
+# tln3 <- tln2
 
 size1 <- 18
 sizep <- 1.2
@@ -470,9 +548,8 @@ g1 <- ggplot(tln3, aes(x = type, y = est, colour = lag),
       scale_color_manual( labels=c("Lag 0", "Lag 1", "Lag 2"), name = "",
                 values = col1) + 
 
-    ylab(expression(atop("% increase in mortality per", 
-		"10-" * mu * 
-		 "g/m"^"3"* " increase in source concentration"))) +
+    ylab(expression(atop("% increase in CVD hospitalizations per", 
+		 "IQR increase in source concentration"))) +
     xlab("") +
     # ggtitle("Mortality effects by\nsource apportionment method") +
     scale_y_continuous(limits=c(lb1, ub1))      +         
@@ -495,7 +572,7 @@ g1
 
 
 setwd("/Users/jennakrall/Dropbox/SpatialFA/plots")
-pdf("hosp_east.pdf", height = 12, width = 10)	
+pdf("hosp_east_6.pdf", height = 10, width = 10)	
 g1
 graphics.off() 	
 # ###########	
@@ -507,9 +584,22 @@ graphics.off()
 	
 	
 	
-
-
 	
+	
+	
+	
+	
+
+
+# ###########	
+###########	
+###########	
+###########	
+###########	
+#table 1
+tab1 <- data.frame(xtab, iqrs)
+colnames(tab1) <- c("Monitors", "Counties", "Major constituents", "IQR")
+xtable(tab1)	
 	
 	
 	
@@ -601,12 +691,12 @@ for(i in 1 : 9) {
 				
 				# temp <- eb(citest[, 1], citest[, 2]^2, totest, A)
 				temp <- hold[[1]][[i]][[4]][,, l]
-				emp <- percinc(temp[, 1])
+				emp <- percinc(temp[, 1], iqrs[i])
 				# sd <- percinc(sqrt(temp[[2]]))
-				sd <- percinc(temp[, 2])
+				sd <- percinc(temp[, 2], iqrs[i])
 				
-				ests <- c(emp, percinc(citest[, 1]))
-				ses <- c(sd, percinc(citest[, 2]))
+				ests <- c(emp, percinc(citest[, 1], iqrs[i]))
+				ses <- c(sd, percinc(citest[, 2], iqrs[i]))
 				lb <- ests - 1.96 * ses
 				ub <- ests + 1.96 * ses
 				
@@ -673,9 +763,8 @@ ggplotColours <- function(n=6, h=c(0, 360) +15, l = 65){
 col2 <- ggplotColours(n = 3, l = 40)[-1]
 size1 <- 14
 pd <- position_dodge(.4)
-g1fun <- function(dat) {
-	lb2 <- -25
-	ub2 <- 25
+g1fun <- function(dat, lb2 = -25, ub2 = 25) {
+
 	wh1 <- which(abs(dat$lb) > ub2)	
 	if(length(wh1 ) > 0) {
 		dat[wh1, "lb"] <- -Inf
@@ -695,9 +784,8 @@ g1fun <- function(dat) {
           scale_color_manual( labels=c("SHARE", "mAPCA"), name = "",
                 values = col2) +            
 
-        ylab(expression(atop("% increase in mortality per", 
-		"10-" * mu * 
-		 "g/m"^"3"* " increase in source concentration"))) +
+        ylab(expression(atop("% increase in CVD hospitalizations per", 
+		"IQR increase in source concentration"))) +
     xlab("") +
     scale_y_continuous(limits=c(lb2, ub2)) +     # Set y range
                        # breaks=0:20*4) +                       # Set tick every 4
@@ -723,12 +811,12 @@ setwd("/Users/jennakrall/Dropbox/SpatialFA/plots")
 
 i <- 1
 lag2 <- paste0("lag", i-1)
-pdf(paste0("hosp_empbayes_east_", lag2, ".pdf"), height = 15, width = 9)
+pdf(paste0("hosp_empbayes_east_mle_", lag2, ".pdf"), height = 20, width = 15)
 lag <- paste("Lag", i- 1)
 
-datU3 <- datU2[which(datU2$type == "EB" & datU2$lag == lag & 
+datU3 <- datU2[which(datU2$type == "MLE" & datU2$lag == lag & 
 	datU2$source %in% s1 ), ]
-g1fun(datU3)	
+g1fun(datU3, lb2 = -40, ub2 = 40)	
 
 graphics.off()
 
