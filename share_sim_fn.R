@@ -293,7 +293,11 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 	dms <- domatchSIM(restrict.data = data, threli = threli, 
 		usedata = T, thresang = thresang)
 	share <- dms[[3]]
+	sources <- dms[[4]]
 	reg <- dms[[1]][[1]]
+	match1 <- as.vector(solve_LSAP(calc.dists(reg, PCs)))
+
+	
 	
 		
 	#perform mAPCA
@@ -304,34 +308,27 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 	
 	#apply APCA
 	apca <- list()
+	betas <- list()
+	vs <- list()
 	for(i in 1 : length(data)) {
 		nf1 <- length(share[[i]])
-		temp <- abspca(data[[i]], nfactors = nf1)
-		# wsds0 <- which(apply(data[[i]], 2, sd) == 0)
-		# pc <- temp[[4]]
-		# dat <- data[[i]]
-		# if(length(wsds0) > 0) {
-			# pc <- pc[-wsds0, ]
-			# dat <- dat[, -wsds0]
-		# }
-		# vars <- diag(cov(dat %*% solve(cov(dat)) %*% pc))
-		# vara <- vars / apply(temp[[1]], 2, var)
-		# temp2 <- sweep(temp[[1]], 2, sqrt(vara), "*")
-		# shifts <- (1 - vara) * apply(temp[[1]], 2, mean)
-		# apca[[i]]  <- sweep(temp2, 2, shifts, "+")
+		temp <- abspca(data[[i]], nfactors = nf1)		
 		apca[[i]] <- temp[[1]]
+		betas[[i]] <- temp[[6]]
+		vs[[i]] <- temp[[7]]
 	}
+	
+	apca <- fixerror2(apca, data, betas, vs, share, sources)
 
 
 	#get hospiatlization data
 	betas <- 1/iqrs * log(etas / 100 + 1)
 	y <- hospdat(source, betas, shareT, int)
 
-	
 	#match share to PCs
 	match1 <- as.vector(solve_LSAP(calc.dists(PCs, reg)))
 	regnames1 <- names[match1]
-	
+
 	
 	#match mAPCA to PCs
 	match1 <- as.vector(solve_LSAP(calc.dists(PCs, mapca)))
@@ -339,8 +336,10 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 
 
 	tlnmAPCA <- tlnout(regnames2, y, mapcasource, "mapca")
-	tlnAPCA <- tlnout(regnames1, y, apca, "apca", share)
+	tlnAPCA <- tlnout(regnames1, y, apca1, "apca", share)
 	tlntruth <- tlnout(names, y, source, "truth", shareT)
+	
+	# tlnAPCA <- tlnout(names, y, apca, "apca", shareT)
 
 	#match results
 	tlnAPCA <- tlnAPCA[match(rownames(tlntruth), rownames(tlnAPCA)), ]
@@ -356,6 +355,146 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 	names(out) <- c("truth", "APCA", "mAPCA")
 	out
 }
+
+
+fixerror <- function(apca, share, sources, sim = T) {
+	
+	apcaout <- list()
+	
+	#create list of sources
+	for(i in 1 : length(sources)) {
+		shares <- sapply(share, function(x) {	
+			ifelse(i %in% x, which(x == i), 0)})
+			
+		temp <- 0	
+		dates <- as.Date("1970-01-01")
+		mons <- 0
+		for(j in 1 : length(apca)) {
+			if(shares[j] != 0) {
+				temp2 <- apca[[j]][, shares[j]]
+				if(sim == T) {
+					dates1 <- as.Date(seq(1, nrow(apca[[j]])), 
+					origin = "1970-01-01")
+				}else{
+					dates1 <- apca[[j]][, 1]
+				}
+				
+				
+				dates <- c(dates, dates1)
+				temp <- c(temp, temp2)
+				mons <- c(mons, rep(j, nrow(apca[[j]])))
+			}
+		}
+		temp <- data.frame(dates, temp, mons)
+		temp <- temp[-1, ]
+		
+		#fixed mixed model
+		# lm1 <- lme(temp ~ 1,random = list(mons=~1, dates=~1), data = temp)
+		# random = ~1 | mons + dates, data = temp)
+		# lm1 <- lme(temp ~ 1, random = pdBlocked(list(pdSymm(~mons-1), pdSymm(~dates-1))), data = temp)
+		lm1 <- lmer(temp ~ (1|dates) + (1|mons), data = temp)
+		
+		
+		apcaout[[i]] <- temp
+		
+	}
+	
+	
+	
+}
+
+
+
+
+getsigma2 <- function(dat, betas, vs, shares) {
+	Z <- lapply(dat, function(x){
+		sds <- diag(1/apply(x, 2, sd))
+		x %*% sds %*% solve(cor(x))
+	})
+	
+	#for each data
+	all <- c(0, 0, 0, 0)
+	for(i in 1 : length(Z)) {
+		
+		#create iterations
+		for(j in 1 : length(shares)) {
+			temp <- Z[[i]]
+			
+			#if source at monitor
+			if(shares[j] > 0) {
+				vl <- vs[[j]][, shares[j]]
+				bl <- betas[[j]][shares[j]]
+				vlbl <- vl * bl
+								
+				if(length(vl) != ncol(temp)) {
+					temp <- temp[, names(vl)]					
+				}
+				
+				f1 <- temp %*% vlbl
+				others1 <- matrix(rep(c(i, j), length(f1)), 
+					byrow= T, ncol = 2)
+					
+					
+				# time <- dat[[i]][, 1]
+				time <- seq(1, length(f1))
+				
+				all <- rbind(all, cbind(f1, others1, time))
+			}
+		}
+	}
+	all <- all[-1, ]
+	all <- data.frame(all)
+	
+	colnames(all) <- c("conc", "mon", "iter", "time")
+	lm1 <- lmer(conc ~ mon * time  + (1 | time), data = all)
+	summary(lm1)$varcor$time[[1]]
+	
+	
+	# lm1 <- lmer(temp ~ (1|dates) + (1|mons), data = temp)
+	
+	
+}
+
+##### # code to get sigma, adjusted source est 
+fixerror2 <- function(apca, dat, betas, vs, share, sources, sim = T) {
+	
+	apcaout <- list()
+	
+	#for each source
+	for(i in 1 : length(sources)) {
+		shares <- sapply(share, function(x) {	
+			ifelse(i %in% x, which(x == i), 0)})
+		
+		#get vl/bl info
+		
+		#estimate sigma
+		sigma2 <- getsigma2(dat, betas, vs, shares)
+		
+		#get empirical bayes estimate
+		for(j in 1 : length(apca)) {
+			if(i == 1) {
+				apcaout[[j]] <- apca[[j]]
+			}
+			if(shares[j] > 0) {
+				temp <- apca[[j]][, shares[j]]
+				mui <- mean(temp)
+				tau2i <- max(c(0, var(temp) - sigma2))
+				
+				B <- sigma2 / (sigma2 + tau2i)
+				apcaout[[j]][, shares[j]] <- (1 - B) * temp + B * mui
+			}
+		}
+		
+		
+	}
+	
+	apcaout
+	
+}
+
+
+
+
 
 
 
