@@ -58,6 +58,8 @@ for(i in 1 : ncol(vec)) {
 	}
 }
 
+vec <- sweep(vec, 2, colSums(vec), "/")
+
 
 #name sources based on vec
 names <- c("traffic", "fireworks", "soil", 
@@ -126,7 +128,7 @@ keeps[[5]] <- seq(1, nc)[-c(1, 2, 5)]
 #######
 #######
 #######
-ns <- 10
+ns <- 100
 nd <- 1000
 
 seeds1 <- c(3474, 4866, 3451, 4672, 9165, 2165)
