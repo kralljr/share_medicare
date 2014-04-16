@@ -17,6 +17,7 @@ load("/Users/jennakrall/Dropbox/MDL_sourceapp/MDL_project_oct2012/cache/mnvar.RD
 #load libraries
 library(tlnise)
 library(ggplot2)
+library(lme4)
 
 
 #load code
@@ -56,14 +57,15 @@ set.seed(9763)
 outB <- outerSIMhosp(names, nmons, reps, ndays, PCs, keeps, 
 		cms, sds, etas)
 
+# outA <- outB
 
-
-out1 <- reorderout(list(outA, outB), 
+out1 <- reorderout(list(outB, outA), 
 	nr = nrow(outA[[1]]), 	sources = rownames(outA[[1]]))
 
 
 out1$Type <- factor(out1$Type, levels = c("Known", "SHARE", "mAPCA"))
 out1$Source <- factor(out1$Source, levels = names)
+# out1$Sim <- factor(out1$Sim, levels = c("B", "A"), )
 
 pd <- position_dodge(.4)
 size1 <- 18
@@ -97,11 +99,11 @@ g1 <- ggplot(out1, aes(x = Source, y = est, colour = Type),
 g1 <- g1 +theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5, size = size1))
 g1 <- g1	+ theme(strip.text.y = element_text(size = size1)) +
 	facet_wrap(~Sim, ncol = 2) +theme(strip.text.x = element_text(size = size1))
-g1 <- g1 + theme(legend.justification=c(1,0), legend.position=c(1,0))
+g1 <- g1 + theme(legend.justification=c(0,0), legend.position=c(0,0))
 
 
 
-pdf(file.path(dirplot, "hosp_sim.pdf"), height = 7, width = 10)
+# pdf(file.path(dirplot, "hosp_sim.pdf"), height = 7, width = 10)
 g1
-graphics.off()
+# graphics.off()
 
