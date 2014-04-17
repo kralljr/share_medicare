@@ -318,7 +318,7 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 		vs[[i]] <- temp[[7]]
 	}
 	
-	apca <- fixerror2(apca, data, betas, vs, share, sources)
+	apca2 <- fixerror2(apca, data, betas, vs, share, sources)
 
 
 	#get hospiatlization data
@@ -336,23 +336,25 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 
 
 	tlnmAPCA <- tlnout(regnames2, y, mapcasource, "mapca")
-	tlnAPCA <- tlnout(regnames1, y, apca1, "apca", share)
+	tlnAPCA <- tlnout(regnames1, y, apca, "apca", share)
+	tlnAPCA2 <- tlnout(regnames1, y, apca2, "apca", share)
 	tlntruth <- tlnout(names, y, source, "truth", shareT)
 	
-	# tlnAPCA <- tlnout(names, y, apca, "apca", shareT)
 
 	#match results
 	tlnAPCA <- tlnAPCA[match(rownames(tlntruth), rownames(tlnAPCA)), ]
+	tlnAPCA2 <- tlnAPCA2[match(rownames(tlntruth), rownames(tlnAPCA2)), ]
 	tlnmAPCA <- tlnmAPCA[match(rownames(tlntruth), rownames(tlnmAPCA)), ]
 	
 	#get IQR increase
 	for(i in 1 : nrow(tlntruth)) {
 		tlnAPCA[i, ] <- percinc(tlnAPCA[i, ], scale = iqrs[i])
+		tlnAPCA2[i, ] <- percinc(tlnAPCA2[i, ], scale = iqrs[i])
 		tlnmAPCA[i, ] <- percinc(tlnmAPCA[i, ], scale = iqrs[i])
 		tlntruth[i, ] <- percinc(tlntruth[i, ], scale = iqrs[i])
 	}
-	out <- list(tlntruth, tlnAPCA, tlnmAPCA)
-	names(out) <- c("truth", "APCA", "mAPCA")
+	out <- list(tlntruth, tlnAPCA, tlnAPCA2, tlnmAPCA)
+	names(out) <- c("truth", "APCA", "APCA2", "mAPCA")
 	out
 }
 
@@ -406,31 +408,77 @@ fixerror <- function(apca, share, sources, sim = T) {
 
 
 
+#this is for each source
 getsigma2 <- function(dat, betas, vs, shares) {
-	Z <- lapply(dat, function(x){
-		sds <- diag(1/apply(x, 2, sd))
-		x %*% sds %*% solve(cor(x))
-	})
 	
 	#for each data
 	all <- c(0, 0, 0, 0)
-	for(i in 1 : length(Z)) {
+	outs <- vector(, length = length(shares))
+	
+	#for each monitor
+	for(i in 1 : length(dat)) {
+		# all <- c(0, 0, 0, 0)
+		
+		#if source at monitor
+		if(shares[i] > 0) {
+		
 		
 		#create iterations
 		for(j in 1 : length(shares)) {
-			temp <- Z[[i]]
+			
+			#print(c(i, j))
+			temp <- dat[[i]]
 			
 			#if source at monitor
 			if(shares[j] > 0) {
+				
+				
+				
 				vl <- vs[[j]][, shares[j]]
-				bl <- betas[[j]][shares[j]]
-				vlbl <- vl * bl
-								
-				if(length(vl) != ncol(temp)) {
-					temp <- temp[, names(vl)]					
+				vall <- vs[[i]]
+				
+				names <- intersect(rownames(vall), names(vl))
+				vl <- vl[names]
+				vall <- vall[names, ]
+				
+				
+				vall[, shares[i]] <- vl
+
+												
+				if(length(names) != ncol(temp)) {
+					temp <- temp[, names]					
+				}				
+				
+				sd1 <-  apply(temp, 2, sd)
+				wh0 <- which(sd1 == 0)
+				if(length(wh0) > 0) {
+					# browser()
+					sd1 <- sd1[-wh0]
+					temp <- temp[, -wh0]
+					vl <- vl[-wh0]
+					vall <- vall[-wh0, ]
 				}
 				
-				f1 <- temp %*% vlbl
+				sds <- diag(sd1)
+
+				
+				#get betas
+				# pm <- matrix(rowSums(temp))
+				# # A <- temp %*% sds %*% solve(cor(temp)) %*% vl
+				# A <- temp %*% sds %*% solve(cor(temp)) %*% vall
+				# bl <- chol2inv(chol(t(A) %*% A)) %*% t(A) %*% (pm)
+				
+				# f1 <- A[, shares[i]] * bl[shares[i]]
+				
+				
+				# bl <- betas[[j]][shares[j]]
+				bl <- betas[[i]][shares[i]]
+				vlbl <- vl * bl
+				f1 <-  temp %*% sds %*% solve(cor(temp)) %*% vlbl
+
+
+				if(length(which(is.na(f1))) != 0) { browser()}
+				# f1 <- temp %*% vlbl
 				others1 <- matrix(rep(c(i, j), length(f1)), 
 					byrow= T, ncol = 2)
 					
@@ -439,19 +487,70 @@ getsigma2 <- function(dat, betas, vs, shares) {
 				time <- seq(1, length(f1))
 				
 				all <- rbind(all, cbind(f1, others1, time))
-			}
-		}
-	}
+			}#end test share
+			
+			
+		}#end loop over shares
+
+
+		#by monitor
+		# colnames(all) <- c("conc", "mon", "iter", "time")
+		# all <- data.frame(all[-1, ])
+		# all$time <- as.factor(all$time)
+		# lm1 <- lmer(conc ~  time + (1 | time) , data = all)
+		# outs[i] <- summary(lm1)$varcor$time[[1]]
+
+
+		}#end test monitor
+	}#end loop over monitor
 	all <- all[-1, ]
 	all <- data.frame(all)
+	# all[, 3] <- paste0(all[, 2], all[, 4])
 	
 	colnames(all) <- c("conc", "mon", "iter", "time")
-	lm1 <- lmer(conc ~ mon * time  + (1 | time), data = all)
-	summary(lm1)$varcor$time[[1]]
+	
+	all2 <- data.frame(all, paste0(all$mon, ":", all$time))
+	colnames(all2) <- c(colnames(all), "montime")
+	
+	all2$mon <- factor(all2$mon)
+	all2$time <- factor(all2$time)
+	
+	all2 <- all2[complete.cases(all2), ]
+	
+	
+	# browser()
+	
+	# lm1 <- lmer(conc ~ mon + (1 | iter) + (1 | time), data = all2)
+	# summary(lm1)$varcor$iter[[1]]
+	
+	
+	# browser()
+	# lm1 <- lme(conc ~ 1,random = list(mon=~1, time=~1, iter~1), data = all2)
+	outs <- vector()
+	unmon <- as.numeric(as.character(unique(all2$mon)))
+	for(k in 1 : length(dat)) {
+		print(k)
+		if(k %in% unmon) {
+			dat1 <- all2[which(all2$mon == k), ]
+			dat1$iter <- as.factor(dat1$iter)
+			dat1$iter <- as.factor(dat1$time)
+			lm1  <- lmer(conc ~ (1 | iter) + 
+				(1 | time), data = dat1)
+			outs[k]	<- summary(lm1)$varcor$iter[[1]]
+		}
+	}
+	outs
+	
+	# lm1 <- lmer(conc ~ mon  + (1 | time), data = all)
+		# summary(lm1)$varcor$time[[1]]
+	
+	
+	# lm1 <- lmer(conc ~ mon + (1 | time)  + (1 | montime), data = all2)
+	# summary(lm1)$varcor$montime[[1]]
 	
 	
 	# lm1 <- lmer(temp ~ (1|dates) + (1|mons), data = temp)
-	
+	# outs
 	
 }
 
@@ -469,6 +568,8 @@ fixerror2 <- function(apca, dat, betas, vs, share, sources, sim = T) {
 		
 		#estimate sigma
 		sigma2 <- getsigma2(dat, betas, vs, shares)
+		# print(sigma2)
+		# sigma2 <- 0.1
 		
 		#get empirical bayes estimate
 		for(j in 1 : length(apca)) {
@@ -478,9 +579,16 @@ fixerror2 <- function(apca, dat, betas, vs, share, sources, sim = T) {
 			if(shares[j] > 0) {
 				temp <- apca[[j]][, shares[j]]
 				mui <- mean(temp)
-				tau2i <- max(c(0, var(temp) - sigma2))
 				
-				B <- sigma2 / (sigma2 + tau2i)
+				if(length(sigma2) > 1) {
+					sigma2U <- sigma2[j]
+				}else{
+					sigma2U <- sigma2
+					}
+				tau2i <- max(c(0, var(temp) - sigma2U))
+				
+				B <- sigma2U / (sigma2U + tau2i)
+				#print(c(sigma2U, tau2i, B))
 				apcaout[[j]][, shares[j]] <- (1 - B) * temp + B * mui
 			}
 		}
@@ -531,8 +639,12 @@ tlnout <- function(unsources, y, sourceconc, type, share = NULL) {
 			}
 			
 			if(!is.null(sourceconc1)) {
-				glm[j, ] <- summary(glm(y[[j]] ~ sourceconc1, 
-					family = "poisson"))$coef[-1, c(1, 2)]
+				temp <- try(glm(y[[j]] ~ sourceconc1, 
+					family = "poisson"))
+				if(class(temp)[1] != "try-error" & !(is.na(temp$coef[2]))) {
+					#print(j)
+					glm[j, ] <- summary(temp)$coef[-1, c(1, 2)]
+				} #else{ browser()}
 			}
 			
 
