@@ -433,17 +433,17 @@ getsigma2 <- function(dat, betas, vs, shares) {
 			if(shares[j] > 0) {
 				
 				
-				
+				vorg <- vs[[i]][, shares[i]]
 				vl <- vs[[j]][, shares[j]]
-				vall <- vs[[i]]
+				if(sum(vorg * vl) < 0) {
+					#print("rev")
+					vl <- -vl
+				}
 				
-				names <- intersect(rownames(vall), names(vl))
+				# names <- names(vl)
+				names <- intersect(names(vl), names(vorg))
 				vl <- vl[names]
-				vall <- vall[names, ]
-				
-				
-				vall[, shares[i]] <- vl
-
+				vorg <- vorg[names]
 												
 				if(length(names) != ncol(temp)) {
 					temp <- temp[, names]					
@@ -456,34 +456,30 @@ getsigma2 <- function(dat, betas, vs, shares) {
 					sd1 <- sd1[-wh0]
 					temp <- temp[, -wh0]
 					vl <- vl[-wh0]
-					vall <- vall[-wh0, ]
 				}
 				
 				sds <- diag(sd1)
 
-				
-				#get betas
-				# pm <- matrix(rowSums(temp))
-				# # A <- temp %*% sds %*% solve(cor(temp)) %*% vl
-				# A <- temp %*% sds %*% solve(cor(temp)) %*% vall
-				# bl <- chol2inv(chol(t(A) %*% A)) %*% t(A) %*% (pm)
-				
-				# f1 <- A[, shares[i]] * bl[shares[i]]
-				
-				
-				# bl <- betas[[j]][shares[j]]
 				bl <- betas[[i]][shares[i]]
-				vlbl <- vl * bl
-				f1 <-  temp %*% sds %*% solve(cor(temp)) %*% vlbl
+				# vlbl <- vl * bl
+				vlbl <- vorg * bl
+				
+				#original source concentration
+				f1o <-  temp %*% sds %*% solve(cor(temp)) %*% vlbl
+				#new A
+				a1 <- temp %*% sds %*% solve(cor(temp)) %*% vl
 
+				#scaling param
+				bet <- lm(f1o~ a1)$coef[-1]
+				
+				f1 <- a1 * bet
 
 				if(length(which(is.na(f1))) != 0) { browser()}
 				# f1 <- temp %*% vlbl
 				others1 <- matrix(rep(c(i, j), length(f1)), 
 					byrow= T, ncol = 2)
 					
-					
-				# time <- dat[[i]][, 1]
+
 				time <- seq(1, length(f1))
 				
 				all <- rbind(all, cbind(f1, others1, time))
@@ -491,14 +487,6 @@ getsigma2 <- function(dat, betas, vs, shares) {
 			
 			
 		}#end loop over shares
-
-
-		#by monitor
-		# colnames(all) <- c("conc", "mon", "iter", "time")
-		# all <- data.frame(all[-1, ])
-		# all$time <- as.factor(all$time)
-		# lm1 <- lmer(conc ~  time + (1 | time) , data = all)
-		# outs[i] <- summary(lm1)$varcor$time[[1]]
 
 
 		}#end test monitor
@@ -514,51 +502,36 @@ getsigma2 <- function(dat, betas, vs, shares) {
 	
 	all2$mon <- factor(all2$mon)
 	all2$time <- factor(all2$time)
+	all2$iter <- factor(all2$iter)
 	
 	all2 <- all2[complete.cases(all2), ]
 	
-	
-	# browser()
-	
-	# lm1 <- lmer(conc ~ mon + (1 | iter) + (1 | time), data = all2)
-	# summary(lm1)$varcor$iter[[1]]
-	
-	
-	# browser()
-	# lm1 <- lme(conc ~ 1,random = list(mon=~1, time=~1, iter~1), data = all2)
+
 	outs <- vector()
 	unmon <- as.numeric(as.character(unique(all2$mon)))
+	
+	apca <- list()
 	for(k in 1 : length(dat)) {
-		print(k)
+		#print(k)
 		if(k %in% unmon) {
-			dat1 <- all2[which(all2$mon == k), ]
-			dat1$iter <- as.factor(dat1$iter)
-			dat1$iter <- as.factor(dat1$time)
-			lm1  <- lmer(conc ~ (1 | iter) + 
-				(1 | time), data = dat1)
-			outs[k]	<- summary(lm1)$varcor$iter[[1]]
+			temp <- all2[which(all2$mon == k), ]
+			apca[[k]] <- tapply(temp$conc, temp$time, mean, na.rm = T)
+			# dat1 <- all2[which(all2$mon == k), ]
+			# lm1  <- lmer(conc ~ (1 | iter) + 
+				# (1 | time), data = dat1)
+			# outs[k]	<- summary(lm1)$varcor$iter[[1]]
 		}
 	}
-	outs
-	
-	# lm1 <- lmer(conc ~ mon  + (1 | time), data = all)
-		# summary(lm1)$varcor$time[[1]]
-	
-	
-	# lm1 <- lmer(conc ~ mon + (1 | time)  + (1 | montime), data = all2)
-	# summary(lm1)$varcor$montime[[1]]
-	
-	
-	# lm1 <- lmer(temp ~ (1|dates) + (1|mons), data = temp)
 	# outs
+	apca	
 	
 }
 
 ##### # code to get sigma, adjusted source est 
 fixerror2 <- function(apca, dat, betas, vs, share, sources, sim = T) {
 	
+	apca1 <- list()
 	apcaout <- list()
-	
 	#for each source
 	for(i in 1 : length(sources)) {
 		shares <- sapply(share, function(x) {	
@@ -567,34 +540,46 @@ fixerror2 <- function(apca, dat, betas, vs, share, sources, sim = T) {
 		#get vl/bl info
 		
 		#estimate sigma
-		sigma2 <- getsigma2(dat, betas, vs, shares)
+		# sigma2 <- getsigma2(dat, betas, vs, shares)
+		apca1[[i]] <- getsigma2(dat, betas, vs, shares)
 		# print(sigma2)
 		# sigma2 <- 0.1
 		
-		#get empirical bayes estimate
-		for(j in 1 : length(apca)) {
-			if(i == 1) {
-				apcaout[[j]] <- apca[[j]]
-			}
-			if(shares[j] > 0) {
-				temp <- apca[[j]][, shares[j]]
-				mui <- mean(temp)
+# # 		#get empirical bayes estimate
+		# for(j in 1 : length(apca)) {
+			# if(i == 1) {
+				# apcaout[[j]] <- apca[[j]]
+			# }
+			# if(shares[j] > 0) {
+				# temp <- apca[[j]][, shares[j]]
+				# mui <- mean(temp)
 				
-				if(length(sigma2) > 1) {
-					sigma2U <- sigma2[j]
-				}else{
-					sigma2U <- sigma2
-					}
-				tau2i <- max(c(0, var(temp) - sigma2U))
+				# if(length(sigma2) > 1) {
+					# sigma2U <- sigma2[j]
+				# }else{
+					# sigma2U <- sigma2
+					# }
+				# tau2i <- max(c(0, var(temp) - sigma2U))
 				
-				B <- sigma2U / (sigma2U + tau2i)
-				#print(c(sigma2U, tau2i, B))
-				apcaout[[j]][, shares[j]] <- (1 - B) * temp + B * mui
-			}
-		}
+				# B <- sigma2U / (sigma2U + tau2i)
+				# # print(c(sigma2U, tau2i, B))
+				# apcaout[[j]][, shares[j]] <- (1 - B) * temp + B * mui
+			# }
+		# }
 		
 		
 	}
+	
+	
+	#fix order 
+	for(i in 1 : length(apca)) {
+		share1 <- share[[i]]
+		apcaout[[i]] <- matrix(nrow = nrow(apca[[i]]), ncol = length(share1))
+		for(j in 1 : length(share1)) {
+			apcaout[[i]][, j] <- apca1[[share1[j]]][[i]]
+		}
+	}
+	
 	
 	apcaout
 	
@@ -699,13 +684,17 @@ multsims <- function(nsims, names, nmons,
 
 reorderout <- function(out, nr, sources) {
 	types <- c("Known", "SHARE", "mAPCA")
+	n <- length(out[[1]]) - length(types)
+	if(n > 0) {
+		types <- c(types[1:2], paste0("SHARE", seq(1, n)), "mAPCA")
+	}
 	info <- rep("0", 3)
 	
 	dat <- rep(0, 4)
 	
 	for(j in 1 : length(out)) {
 		sim <- c("A", "B", "C", "D", "E")[j]
-		for(i in 1 : 3) {
+		for(i in 1 : length(out[[j]])) {
 			d1 <- out[[j]][[i]]
 			lb <- d1[, 1] - 1.96 * d1[, 2]
 			ub <- d1[, 1] + 1.96 * d1[, 2]
