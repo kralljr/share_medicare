@@ -63,7 +63,7 @@ out1 <- reorderout(list(outB, outA),
 	nr = nrow(outA[[1]]), 	sources = rownames(outA[[1]]))
 
 
-out1$Type <- factor(out1$Type, levels = c("Known", "SHARE", "mAPCA"))
+# out1$Type <- factor(out1$Type, levels = c("Known", "SHARE", "mAPCA"))
 out1$Source <- factor(out1$Source, levels = names)
 # out1$Sim <- factor(out1$Sim, levels = c("B", "A"), )
 
@@ -83,8 +83,8 @@ g1 <- ggplot(out1, aes(x = Source, y = est, colour = Type),
 		linetype = "dashed") +
     geom_pointrange(aes(ymin = lb2, ymax = ub2, colour = Type), 
   	  width = 0.1, position = pd, size = sizep) +
-    scale_color_manual( labels =c("Known", "SHARE", "mAPCA"), name = "",
-                values = col1) + 
+    # scale_color_manual( labels =c("Known", "SHARE", "mAPCA"), name = "",
+                # values = col1) + 
 
     ylab(expression(atop("% increase in CVD hospitalizations per", 
 		 "IQR increase in source concentration"))) +
