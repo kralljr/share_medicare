@@ -104,6 +104,8 @@ round(pvd.east[[1]][[1]], 3)
  # [9,] "elemental_carbon/OC/iron "               "29"
 names1 <- c("Metals","Soil", "Sec. Sulfate","Fireworks", "Salt", "P/V",  "Residual oil",  "As/Se/Br", "Traffic")
 
+cbind(names1, as.character(xtab[, 3]))
+
 
 
 
@@ -129,11 +131,11 @@ monsKEEP1 <- monsKEEP[, c(2, 1)]
 ############
 # Create plot of source locations
 setwd(file.path(home.dir, "plots"))
-pdf("map_east_sources_medicare.pdf", height = 7, width = 11)
+pdf("map_east_sources_medicare_full.pdf", height = 7, width = 11)
 
 #set margins
-par(mfrow = c(3, 3), mar = c(3.4, 2.5, 2, 0), 
-	oma = c(2,2,0,0))
+# par(mfrow = c(3, 3), mar = c(3.4, 2.5, 2, 0), 
+	# oma = c(2,2,0,0))
 
 #Get rid of infinite sources
 whinf <- which(is.infinite(Sources))
