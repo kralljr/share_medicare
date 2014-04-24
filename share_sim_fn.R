@@ -242,6 +242,28 @@ hospdat <- function(sources, betas, share, int = 5) {
 
 
 
+hospdat2 <- function(sources, betas, share, names, int = 5) {
+	
+	y <- list()
+	#for each monitor
+	for(i in 1 : length(sources)) {
+		y[[i]] <- matrix(nrow = nrow(sources[[i]]), ncol = ncol(sources[[i]]))
+		colnames(y[[i]]) <- names[share[[i]]]
+		for(j in 1 : ncol(sources[[i]])) {
+			#get mean for poisson
+			lincomb <- 5 + betas[share[[i]][j]] * sources[[i]][, j]
+			mean <- exp(lincomb)
+			
+			#simulate y data
+			y[[i]][, j] <- rpois(nrow(sources[[i]]), mean)
+			
+		}
+	}
+	
+	y
+}
+
+
 
 #### Function to simulate mortality effects
 outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps, 
