@@ -67,6 +67,12 @@ out1 <- reorderout(list(outB, outA),
 out1$Source <- factor(out1$Source, levels = names)
 # out1$Sim <- factor(out1$Sim, levels = c("B", "A"), )
 
+
+
+out1 <- out1[-which(out1$Type == "SHARE1"), ]
+out1$Type <- factor(out1$Type, levels = c("Known", "SHARE", "mAPCA"))
+
+
 pd <- position_dodge(.4)
 size1 <- 18
 sizep <- 1.2
@@ -76,15 +82,18 @@ ub2 <- ifelse(out1$ub >ub1, Inf, out1$ub)
 lb2 <- ifelse(out1$lb < lb1, -Inf, out1$lb)
 
 
+
+
 col1 <- brewer.pal(5, "Dark2")
-g1 <- ggplot(out1, aes(x = Source, y = est, colour = Type), 
+g1 <- ggplot(out2, aes(x = Source, y = est, colour = Type), 
 	ylim = c(-0.01, 0.01)) + 
 	geom_hline(aes(yintercept = 0), colour = "grey80", 
 		linetype = "dashed") +
     geom_pointrange(aes(ymin = lb2, ymax = ub2, colour = Type), 
   	  width = 0.1, position = pd, size = sizep) +
-    # scale_color_manual( labels =c("Known", "SHARE", "mAPCA"), name = "",
-                # values = col1) + 
+    scale_color_manual(name = "",
+                values = col1) + 
+                 # labels =c("Known", "SHARE", "mAPCA")
 
     ylab(expression(atop("% increase in CVD hospitalizations per", 
 		 "IQR increase in source concentration"))) +
