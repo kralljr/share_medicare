@@ -17,7 +17,7 @@ counties <- readRDS("/Users/jennakrall/Dropbox/PM25cons_mort/cities/nmmaps_count
 load(file.path(home.dir, "data/speciation_medicare.RData"))
 load(file.path(home.dir, "data/pvdeast_medicare.RData"))
 load(file.path(home.dir, "data/mort_sources_medicare.RData"))
-load("/Users/jennakrall/Dropbox/SpatialFA/data/sourceconc_medicare.RData")
+load(file.path(home.dir, "data/sourceconc_medicare.RData"))
 
 #load libraries
 library(splancs)
@@ -186,8 +186,8 @@ Sources <- SourcesAPCA
 
 names(mAPCA1[[1]]) <- names(unmonlist)
 names(APCA1[[1]]) <- names(unmonlist)
-save(APCA1, mAPCA1, SourcesmAPCA, SourcesAPCA, 
-	file = "sourceconc_medicare.RData")
+# save(APCA1, mAPCA1, SourcesmAPCA, SourcesAPCA, 
+	# file = "sourceconc_medicare.RData")
 
 
 
@@ -342,6 +342,9 @@ for(i in 1 : ncol(apca)) {
 ########
 ########
 ### PLOT RESULTS
+names1 <- c("Metals","Soil", "Sec. Sulfate","Fireworks", 
+	"Salt", "P/V",  "Residual oil",  "As/Se/Br", "Traffic")
+
 
 #get IQRs
 #mAPCA
@@ -372,9 +375,10 @@ for(i in 1 : 9) {
 }
 
 IQRs2
+names(IQRs2) <- names1
 IQRs1 <- mapcaIQRs[switch]
 
-names(IQRs2) <- names1
+
 names(IQRs1) <- names1
 
 iqrs <- apply(cbind(IQRs1, IQRs2), 1, mean, na.rm = T)
@@ -409,7 +413,7 @@ names1 <- c("Metals","Soil", "Sec. Sulfate","Fireworks",
 	"Salt", "P/V",  "Residual oil",  "As/Se/Br", "Traffic")
 
 
-
+Sources <- Sources[-which(is.infinite(Sources))]
 keeps <- seq(1, length(Sources))
 bounds <- c(-10, 10)
 namesTLN <- c("APCA", "mAPCAsw")
@@ -477,7 +481,7 @@ colnames(tlnoutall) <- c("est", "lb", "ub", "lag", "source", "type")
 	
 
 
-	
+# save(list = ls(), file = '~/Dropbox/SpatialFA/data/all_hosp_results.RData')
 	
 	
 
@@ -499,6 +503,8 @@ pd <- position_dodge(.4)
 tln2 <- tlnoutall[complete.cases(tlnoutall), ]
 lb1 <- -1
 ub1 <- 2
+tln2$lag <- factor(tln2$lag, levels = c("lag1", "lag2", "lag3"), 
+	labels = c("Lag 0", "Lag 1", "Lag 2"))
 tln2$type <- factor(tln2$type, levels = c("APCA", "mAPCAsw"), 
 	labels = c("SHARE", "mAPCA"))
 ubsind <- ifelse(tln2$ub > ub1, 1, 0)
@@ -526,6 +532,10 @@ s1 <- c("Metals", "Traffic", "Residual oil", "Soil", "Salt", "Sec. Sulfate")
 # tln3 <- tln3[-which(tln3$source %in% s1), ]
 tln3 <- tln3[which(tln3$source %in% s1), ]
 tln3$source <- factor(tln3$source, levels = s1)
+tlnhold <- tln3[which(tln3$type == "SHARE" & tln3$lag == "Lag 0"), ]
+sources  <- as.character(tlnhold[order(tlnhold$est, 	
+	decreasing = T), "source"])
+tln3$source <- factor(tln3$source, levels = sources)
 
 
 # tln3 <- tln2
@@ -534,41 +544,60 @@ size1 <- 18
 sizep <- 1.2
 
 col1 <- brewer.pal(5, "Blues")[3:5]
-g1 <- ggplot(tln3, aes(x = type, y = est, colour = lag), 
-	ylim = c(-0.01, 0.01)) + 
-	geom_hline(aes(yintercept = 0), colour = "grey80", 
-		linetype = "dashed") +
-    geom_pointrange(aes(ymin = lb2, ymax = ub2, colour = lag), 
-  	  width = 0.1, position = pd, size = sizep) +
-    # scale_colour_hue(drop = FALSE, name="",
-                     # # breaks=c("lag0", "lag1", "lag2"),
-                     # labels=c("Lag 0", "Lag 1", "Lag 2"),
-                     # l=20, c = 150, h = 150) + 
-     # scale_colour_brewer(palette="Blues", labels=c("Lag 0", "Lag 1", "Lag 2"), name = "") +   
-      scale_color_manual( labels=c("Lag 0", "Lag 1", "Lag 2"), name = "",
-                values = col1) + 
+col1 <- brewer.pal(5, "Dark2")[c(1, 4)]
+col1 <- brewer.pal(8, "Set1")[1:2]
+col1 <- c("indianred3", col1[2])
+gplot1 <- function(lag, dat = tln3) {
+	dat <- dat[which(dat$lag %in% paste("Lag", lag)), ]
+	
+	g1 <- ggplot(dat, aes(x = source, y = est, colour = type), 
+		ylim = c(-0.01, 0.01)) + 
+		geom_hline(aes(yintercept = 0), colour = "grey80", 
+			linetype = "dashed") +
+	    geom_pointrange(aes(ymin = lb2, ymax = ub2, colour = type), 
+	  	  width = 0.1, position = pd, size = sizep) +
+	    # scale_colour_hue(drop = FALSE, name="",
+	                     # # breaks=c("lag0", "lag1", "lag2"),
+	                     # labels=c("Lag 0", "Lag 1", "Lag 2"),
+	                     # l=20, c = 150, h = 150) + 
+	     # scale_colour_brewer(palette="Blues", labels=c("Lag 0", "Lag 1", "Lag 2"), name = "") +   
+	      # scale_color_manual( labels=c("Lag 0", "Lag 1", "Lag 2"), name = "",
+	                # values = col1) + 	
+	    scale_color_manual( labels=c("SHARE", "mAPCA"), name = "",
+	                values = col1) + 	
+	    ylab(expression(atop("% increase in CVD hospitalizations per", 
+			 "IQR increase in source concentration"))) +
+	    xlab("") +
+	    # ggtitle("Mortality effects by\nsource apportionment method") +
+	    scale_y_continuous(limits=c(lb1, ub1))      +         
+	    theme_bw() +        
+	    theme(axis.text.y=element_text(size=size1)) +
+	  	# theme(legend.text=element_text(size=size1), legend.position = c(0.9, 0.85),
+	  		# legend.direction = "vertical")  +
+	  	theme(axis.title=element_text(size=size1)) 
+	    theme(legend.justification=c(1,0), 
+	    	legend.position=c(1,0)) # Position legend in bottom right
+	g1 <- g1 + theme(axis.text.x=element_text(size = size1, hjust = 1,
+		vjust = 1, angle = 45))
+	g1 <- g1 + theme(strip.text.x = element_text(size = size1))
+	if(length(lag) > 1) {
+		g1 <- g1 + facet_wrap(~lag, ncol = 1) 
+	}
+	g1 <- g1	+ theme(strip.text.y = element_text(size = size1))
 
-    ylab(expression(atop("% increase in CVD hospitalizations per", 
-		 "IQR increase in source concentration"))) +
-    xlab("") +
-    # ggtitle("Mortality effects by\nsource apportionment method") +
-    scale_y_continuous(limits=c(lb1, ub1))      +         
-    theme_bw() +        
-    theme(axis.text.y=element_text(size=size1)) +
-  	theme(legend.text=element_text(size=size1), legend.position = "bottom")  +
-  	theme(axis.title=element_text(size=size1)) 
-    # theme(legend.justification=c(1,0), 
-    	# legend.position=c(1,0)) # Position legend in bottom right
-g1 <- g1 + theme(axis.text.x=element_text(size = size1))
-g1 <- g1 + facet_wrap(~source, ncol = 2) +theme(strip.text.x = element_text(size = size1))
-g1 <- g1	+ theme(strip.text.y = element_text(size = size1))
+	g1
+}
 
-g1
+setwd("/Users/jennakrall/Dropbox/SpatialFA/plots")
+pdf("hosp_east_lag0.pdf", height = 7, width = 13)
+gplot1(0)
+graphics.off()
 
 
-
-
-
+setwd("/Users/jennakrall/Dropbox/SpatialFA/plots")
+pdf("hosp_east_lag012.pdf", height = 10, width = 7)
+gplot1(c(0,1, 2))
+graphics.off()
 
 
 setwd("/Users/jennakrall/Dropbox/SpatialFA/plots")
