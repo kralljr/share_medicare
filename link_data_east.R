@@ -137,7 +137,7 @@ unmons <- unmons[which(keep == 1)]
 
 
 
-save(monsKEEP, datall, unmons, file = "speciation_medicare.RData")
+# save(monsKEEP, datall, unmons, file = "speciation_medicare.RData")
 
 
 
@@ -160,6 +160,26 @@ map.axes()
 
 
 points(monsKEEP[, c(2, 1)], col = "grey10", lwd = 2)
+graphics.off()
+
+
+
+
+
+#########
+# Plot map, color
+cols <- brewer.pal(8, "Dark2")
+
+
+setwd(file.path(home.dir, "plots", "region_maps"))
+
+pdf("map_east_medicare_color.pdf", height = 7)
+map("state", col = "grey90",
+	ylim = c(36, 45), xlim = c(-90, -69), fill = T, 
+	mar = c(0, 5, 0, 0), oma = c(0,0,0,0))	
+
+
+points(monsKEEP[, c(2, 1)], col = "orange", lwd = 2)
 graphics.off()
 
 
