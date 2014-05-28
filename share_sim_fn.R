@@ -340,7 +340,7 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 		vs[[i]] <- temp[[7]]
 	}
 	
-	apca2 <- fixerror2(apca, data, betas, vs, share, sources)
+	# apca2 <- fixerror2(apca, data, betas, vs, share, sources)
 
 
 	#get hospiatlization data
@@ -359,24 +359,24 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 
 	tlnmAPCA <- tlnout(regnames2, y, mapcasource, "mapca")
 	tlnAPCA <- tlnout(regnames1, y, apca, "apca", share)
-	tlnAPCA2 <- tlnout(regnames1, y, apca2, "apca", share)
+	# tlnAPCA2 <- tlnout(regnames1, y, apca2, "apca", share)
 	tlntruth <- tlnout(names, y, source, "truth", shareT)
 	
 
 	#match results
 	tlnAPCA <- tlnAPCA[match(rownames(tlntruth), rownames(tlnAPCA)), ]
-	tlnAPCA2 <- tlnAPCA2[match(rownames(tlntruth), rownames(tlnAPCA2)), ]
+	# tlnAPCA2 <- tlnAPCA2[match(rownames(tlntruth), rownames(tlnAPCA2)), ]
 	tlnmAPCA <- tlnmAPCA[match(rownames(tlntruth), rownames(tlnmAPCA)), ]
 	
 	#get IQR increase
 	for(i in 1 : nrow(tlntruth)) {
 		tlnAPCA[i, ] <- percinc(tlnAPCA[i, ], scale = iqrs[i])
-		tlnAPCA2[i, ] <- percinc(tlnAPCA2[i, ], scale = iqrs[i])
+		# tlnAPCA2[i, ] <- percinc(tlnAPCA2[i, ], scale = iqrs[i])
 		tlnmAPCA[i, ] <- percinc(tlnmAPCA[i, ], scale = iqrs[i])
 		tlntruth[i, ] <- percinc(tlntruth[i, ], scale = iqrs[i])
 	}
-	out <- list(tlntruth, tlnAPCA, tlnAPCA2, tlnmAPCA)
-	names(out) <- c("truth", "APCA", "APCA2", "mAPCA")
+	out <- list(tlntruth, tlnAPCA, tlnmAPCA)
+	names(out) <- c("truth", "APCA", "mAPCA")
 	out
 }
 
