@@ -33,8 +33,6 @@ Sources <- pvd.east[[4]]
 
 
 
-
-
 #####
 # get info about data
 length(data.rr)
@@ -121,9 +119,6 @@ cbind(names1, as.character(xtab[, 3]))
 
 
 
-
-
-
 #restrict to lat/long
 monsKEEP1 <- monsKEEP[, c(2, 1)]
 
@@ -143,9 +138,18 @@ if(length(whinf) > 0) {
 	Sources <- Sources[-whinf]
 }
 
-#set size
+#set size, bw
 cex1 <- 2.2
 cex2 <- 1.75
+
+
+#set size, color
+lwd1 <- 2
+cex1 <- 3
+cex2 <- 2
+
+
+
 
 
 # save map
@@ -154,7 +158,7 @@ m1 <- map("state", fill = TRUE, col = "grey60",
 
 # set colors
 cols <- brewer.pal(8, "Dark2")
-
+cols <- c("darkolivegreen3", "orange")
 
 #for each source
 if(length(Sources) > 0) {
@@ -162,12 +166,15 @@ if(length(Sources) > 0) {
 		if(!is.infinite(Sources[i])) {
 	
 		#plot map
-		plot(m1$x, m1$y, type = "l", xlim = c(-90, -69),
-			ylim = c(36, 45), xlab = "", ylab = "", 
-			cex.axis = 2, axes = F)
+		map("state", col = "grey90",
+			ylim = c(36, 45), xlim = c(-90, -69), fill = T, 
+			mar = c(0, 5, 0, 0), oma = c(0,0,0,0), lwd = lwd1)	
+		# plot(m1$x, m1$y, type = "l", xlim = c(-90, -69),
+			# ylim = c(36, 45), xlab = "", ylab = "", 
+			# cex.axis = 2, axes = F)
 		
 		#add name
-		mtext(names1[i], cex = 2)
+		mtext(names1[i], cex =cex1)
 		
 		#which monitors have source
 		monsS <- sapply(share, whichS, num = i)
@@ -185,13 +192,16 @@ if(length(Sources) > 0) {
 		
 		
 		#add legend for 8
-		if(i == 8) {
+		# if(i == 8) {
 			par(xpd = T)
-			legend(-87, 35.5, col = c(cols[2], cols[1]), 
-				legend = c("Source present", "Source absent"), 
-				pch = c(16, 3), cex = 1.1, border = NULL)
+			# legend(-87, 35.5, col = c(cols[2], cols[1]), 
+				# legend = c("Source found", "Source not found"), 
+				# pch = c(16, 3), cex = 1.1, border = NULL)
+			legend("bottomright", col = c(cols[2], cols[1]), 
+				legend = c("Source found", "Source not found"), 
+				pch = c(16, 3), cex = cex2, bty = "n")	
 			par(xpd = F)	
-		}
+		# }
 		}
 	}
 
