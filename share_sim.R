@@ -1,113 +1,43 @@
-#working directories
-dir1 <- "/Users/jennakrall/Dropbox/SpatialFA/data"
-dircode <- "/Users/jennakrall/Dropbox/SpatialFA/rcode"
-home.dir <- "/Users/jennakrall/Dropbox/SpatialFA"
+# File to run simulation study for SHARE
+# 
+
+
+########
+#set  directories
+basedir <- "/Users/jennakrall/Dropbox"
+basedir <- "C:/Users/jrkrall/Dropbox"
+home.dir <- file.path(basedir, "SpatialFA")
+dir1 <- file.path(home.dir, "data")
+dircode <- file.path(home.dir, "rcode")
+
+
+#github
+gh <- "https://github.com/kralljr/share_medicare/blob/master/"
+source(file.path(gh, "share_sim_fn.R"))
+
+########
+#load packages
+#library(devtools)
+#install_github("handles", "kralljr")
+#library(handles)
+#install_github("share", "kralljr")
+#library(share)
+
+#for now, source file
+source(file.path(dircode, "loadfiles_handles_share.R"))
+########
 
 
 
+########
 #load data
-load(file.path(dir1, "speciation_medicare.RData"))
-load("/Users/jennakrall/Dropbox/MDL_sourceapp/MDL_project_oct2012/cache/mnvar.RData")
-
-
-#get code
-source("/Users/jennakrall/Dropbox/SpatialFA/rcode/functions/mortdat_31oct13.R")
-source("/Users/jennakrall/Dropbox/MDL_sourceapp/MDL_project_oct2012/src/absolutepca_5mar12.R")
-source(file.path(dircode, "load_file_spatialfa_17may13.R"))
-source(file.path(dircode, "medicare/share_sim_fn.R"))
+load(file.path(dir1, "data_share_sim.RData"))
 
 
 
-#use Allegheny County, PA data 
-#(city with large pollution, many days of data)
-dat <- datall[[61]][, -c(1, 2)]
-
-
-
-
-
-
-
-
-
-#######
-#######
-#######
-#######
-# Get info about data using PCA
-#######
-#######
-#######
-#######
-
-stddat <- stdize(dat)
-pr <- prcomp(stddat, retx = T)
-nc <- length(which(pr$sd > 1))
-vec <- as.matrix(varimax(pr$rot[, 1 : nc])$load[1: 24, ])
-
-
-#make positive
-cs <- colSums(as.matrix(vec))
-if(length(which(cs < 0)) > 0) {
-	vec[, which(cs < 0)] <- -vec[, which(cs < 0)]
-}
-for(i in 1 : ncol(vec)) {
-	wh0 <- which(vec[, i] < 0)
-	if(length(wh0) > 0) {
-		vec[wh0, i] <- rep(0, length(wh0))
-	}
-}
-
-vec <- sweep(vec, 2, colSums(vec), "/")
-
-
-#name sources based on vec
-names <- c("traffic", "fireworks", "soil", 
-	"sec sulf", "salt", "metals", "P/V")
-	
-cms <- rep(mnvar[1, ], 2)
-sds <- rep(sqrt(mnvar[2, ]), 2)
-	
-	
-#set up 5 subregions
-keeps <- list()
-#with all
-keeps[[1]] <- seq(1, nc)
-#minus 2
-keeps[[2]] <- seq(1, nc)[-c(1, 2)]
-#minus 3 
-keeps[[3]] <- seq(1, nc)[-c(1, 2, 3)]
-#minus 3
-keeps[[4]] <- seq(1, nc)[-c(1, 2, 4)]
-#minus 3
-keeps[[5]] <- seq(1, nc)[-c(1, 2, 5)]
-
-
-
-
-
-
-
-
-
-
-
-
-	
-	
-	
-	
-	
-
-
-
-
-
-
-
-
-
-
+########
+# load functions
+source(file.path(dircode, "medicare", "share_sim_fn.R"))
 
 
 
@@ -128,7 +58,7 @@ keeps[[5]] <- seq(1, nc)[-c(1, 2, 5)]
 #######
 #######
 #######
-ns <- 100
+ns <- 5
 nd <- 1000
 
 seeds1 <- c(3474, 4866, 3451, 4672, 9165, 2165)
@@ -189,8 +119,7 @@ xtable(tabs)
 
 
 
-save(dat, vec, names, keeps, simout, 
-	file = file.path(home.dir, "data", "share_sim_res.RData"))
+save(simout, file = file.path(cwd, "share_sim_res.RData"))
 
 
 
