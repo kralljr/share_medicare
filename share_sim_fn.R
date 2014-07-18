@@ -2,11 +2,158 @@
 #######
 #######
 #######
-# Functions for creating/analyzing simulated data
+# Functions for creating/analyzing simulated data for SHARE
 #######
 #######
 #######
 #######
+
+
+
+####
+# FUNCTIONS TO RUN SHARE SIM
+
+
+
+#####
+# Function to run simulation across iterations
+#####
+# nsims is number of iterations
+# names is vector of source names 
+#    (e.g. c("traffic", "fireworks", "soil")) corresponding to PCs
+# nmons is number of monitors
+# reps is number of monitors per subregion
+# ndays is number of observations
+# PCs is positive part of PC from sample data
+# keeps is share info for creating data
+# cms is vector of lognormal means for sources
+# sds is vector of lognormal sds for sources
+# unequal is vector of numbers to switch subregions
+# days is vector of days for each monitor
+# cut is cutoff for eigenvalues (see nmsource), default is 1.
+# thres is threshold for share angle cutoff 
+multsims <- function(nsims, names, nmons, 
+                     reps, ndays, PCs, keeps, cms, sds, 
+                     unequal = NULL, days = NULL, 
+                     cut = 1, thres = pi/4) {
+    
+    
+    outs <- matrix(nrow = nsims, ncol = 2)
+    
+    #for each simulation...
+    for(i in 1 : nsims) {
+        
+        outs[i, ] <- outerSIM(names, nmons, 
+                              reps, ndays, PCs, keeps, 
+                              cms, sds, unequal, days, 
+                              cut, thres)
+    }
+    colnames(outs) <- c("SHARE", "mAPCA")
+    
+    list(fulloutput = outs, summary = colMeans(outs))
+    
+}
+
+
+
+
+
+
+
+#######
+# Function to run simulation for one set of data
+#######
+# names is vector of source names 
+#    (e.g. c("traffic", "fireworks", "soil")) corresponding to PCs
+# nmons is number of monitors
+# reps is number of monitors per subregion
+# ndays is number of observations
+# PCs is positive part of PC from sample data
+# keeps is share info for creating data
+# cms is vector of lognormal means for sources
+# sds is vector of lognormal sds for sources
+# unequal is vector of numbers to switch subregions
+# days is vector of days for each monitor
+# cut is cutoff for eigenvalues (see nmsource), default is 1.
+# thres is threshold for share angle cutoff 
+outerSIM <- function(names, nmons, reps, ndays, PCs, keeps, 
+                     cms, sds, unequal = NULL, days = NULL, cut = 1,
+                     thres = pi/4) {
+    
+    #create dataset
+    data <- outerdat(nmons, reps, ndays, PCs, keeps, 
+                     cms, sds, unequal, days)
+
+    #perform SHARE
+    share1 <- share(data, cut = cut, thres = thres)
+    share <- share1$share
+    major.sig <- share1$major.sig
+    
+    
+    #perform mAPCA
+    mapca <- as.matrix(mAPCA(dat = data, lim = 50)[["apca"]][["vmax"]]$load)
+    
+    
+    #match share to PCs
+    match1 <- as.vector(solve_LSAP(angle(PCs, major.sig)))
+    regnames1 <- names[match1]
+    
+    
+    #match mAPCA to PCs
+    match1 <- as.vector(solve_LSAP(angle(PCs, mapca)))
+    regnames2 <- names[match1]
+    
+    
+    l <- 1
+    matches <- matrix(nrow = length(share), ncol = 2)
+    lens <- matrix(nrow = length(share), ncol = 2)
+    
+    #for each monitor
+    for(i in 1 : nmons) {
+        
+        #get names for truth, SHARE, mAPCA
+        s <- list()
+        s[[1]] <- names[keeps[[l]]]
+        s[[2]] <- regnames1[share[[i]]]
+        s[[3]] <- regnames2
+        
+        
+        #compare SHARE/mAPCA to PCs
+        l1 <- sapply(s, length)
+        
+        #for SHARE and mAPCA
+        for(j in 2 : 3) {
+            s2 <- s
+            #If length truth != length of SHARE/mAPCA
+            if(l1[1] != l1[j]) {
+                
+                #find smaller length
+                c1 <- which.min(l1[c(1, j)])
+                c1 <- ifelse(c1 == 1, 1, j)
+                #add source names to make up deficit
+                seqs <- paste0("no", seq(1, 100))
+                s2[[c1]] <- c(s2[[c1]], sample(seqs, abs(l1[j] - l1[1])))
+            }
+            
+            #how many match
+            matches[i, j - 1] <- length(which(s2[[1]] %in% s2[[j]]))
+            #how many potential matches (max)
+            lens[i, j - 1] <- sapply(s2, length)[1]
+            
+        }
+        
+        #update subregion
+        reps1 <- ifelse(!is.null(unequal), unequal, reps)
+        
+        #Iterate through truth as necessary
+        l <- switchfun(reps1, i, l)
+    }
+    
+    #summarize
+    out <- colSums(matches) / colSums(lens)
+    
+    
+}
 
 
 
@@ -70,8 +217,11 @@ createdat <- function(nr, vec, sources, cm, sd) {
 	errs <- matrix(rlnorm(n, sd = 0.01), nrow = nrow(dattemp))
 	dattemp <- dattemp * errs
 	
+    #add date
+    dates <- as.Date(seq(1, nrow(dattemp)), origin = "1970-01-01")
+    dattemp <- data.frame(dates, dattemp)
 	
-	list(dattemp, scores)
+	list(data = dattemp, source = scores)
 }
 
 
@@ -79,7 +229,8 @@ createdat <- function(nr, vec, sources, cm, sd) {
 
 
 ####
-# function to generate data
+# function to generate simulated source data
+####
 # nmons is number of monitors
 # reps is whether sources change by monitor
 # ndays is number of observations
@@ -106,8 +257,8 @@ outerdat <- function(nmons, reps, ndays = 1000, PCs, keeps,
 		
 		#create data and save
 		temp <- createdat(ndays, PCs, keeps[[l]], cms, sds)
-		datnew[[i]] <- temp[[1]]
-		source[[i]] <- temp[[2]]
+		datnew[[i]] <- temp$data
+		source[[i]] <- temp$source
 		
 		#update subregion
 		reps1 <- ifelse(!is.null(unequal), unequal, reps)
@@ -118,7 +269,7 @@ outerdat <- function(nmons, reps, ndays = 1000, PCs, keeps,
 	out <- datnew
 	
 	if(!is.null(sourceout)) {
-		out <- list(datnew, source)
+		out <- list(data = datnew, source = source)
 	}
 	out
 }
@@ -126,102 +277,17 @@ outerdat <- function(nmons, reps, ndays = 1000, PCs, keeps,
 
 
 
-#######
-# Function to run simulation for one set of data
-# names is vector of source names 
-#	(e.g. c("traffic", "fireworks", "soil")) corresponding to PCs
-# nmons is number of monitors
-# reps is number of monitors per subregion
-# ndays is number of observations
-# PCs is positive part of PC from sample data
-# keeps is share info for creating data
-# cms is vector of lognormal means for sources
-# sds is vector of lognormal sds for sources
-# unequal is vector of numbers to switch subregions
-# days is vector of days for each monitor
-# threli is threshold for number of sources
-# thresang is threshold for share angle cutoff 
-outerSIM <- function(names, nmons, reps, ndays, PCs, keeps, 
-		cms, sds, unequal = NULL, days = NULL, threli = 1,
-		thresang = pi/4) {
-	
-	#create dataset
-	data <- outerdat(nmons, reps, ndays, PCs, keeps, 
-		cms, sds, unequal, days)
-		
-	#perform SHARE
-	dms <- domatchSIM(restrict.data = data, threli = threli, 
-		usedata = T, thresang = thresang)
-	share <- dms[[3]]
-	reg <- dms[[1]][[1]]
-	
-		
-	#perform mAPCA
-	mapca <- as.matrix(spatial.apca(dat = data, lim = 50)[[6]][[2]]$load)
-
-	
-	#match share to PCs
-	match1 <- as.vector(solve_LSAP(calc.dists(PCs, reg)))
-	regnames1 <- names[match1]
-	
-	
-	#match mAPCA to PCs
-	match1 <- as.vector(solve_LSAP(calc.dists(PCs, mapca)))
-	regnames2 <- names[match1]
 
 
 
 
-	l <- 1
-	matches <- matrix(nrow = length(share), ncol = 2)
-	lens <- matrix(nrow = length(share), ncol = 2)
-
-	#for each monitor
-	for(i in 1 : nmons) {
-		
-		#get names
-		s <- list()
-		s[[1]] <- names[keeps[[l]]]
-		s[[2]] <- regnames1[share[[i]]]
-		s[[3]] <- regnames2
-		
-		
-		#compare SHARE/mAPCA to PCs
-		l1 <- sapply(s, length)
-		for(j in 2 : 3) {
-			s2 <- s
-			#make same length
-			if(l1[1] != l1[j]) {
-				c1 <- which.min(l1[c(1, j)])
-				c1 <- ifelse(c1 == 1, 1, j)
-				seqs <- paste0("no", seq(1, 100))
-				s2[[c1]] <- c(s2[[c1]], sample(seqs, abs(l1[j] - l1[1])))
-			}
-			
-			#how many match
-			matches[i, j - 1] <- length(which(s2[[1]] %in% s2[[j]]))
-			#how many potential matches (max)
-			lens[i, j - 1] <- sapply(s2, length)[1]
-
-		}
-		
-		#update subregion
-		reps1 <- ifelse(!is.null(unequal), unequal, reps)
-		l <- switchfun(reps1, i, l)
-	}
-	
-	#summarize
-	out <- colSums(matches) / colSums(lens)
-
-	
-}
-
-
+##################
+# Functions for hospitalization simulation 
 
 #### Function to simulate hospitalization data
-# nreps is number of simulations
 # sources is matrix of source concentrations
 # betas is vector of associations
+# share is list of betas to use for each monitor
 # int is intercept
 hospdat <- function(sources, betas, share, int = 5) {
 	
@@ -229,7 +295,7 @@ hospdat <- function(sources, betas, share, int = 5) {
 	#for each monitor
 	for(i in 1 : length(sources)) {
 		#get mean for poisson
-		lincomb <- 5 + t(as.matrix(betas[share[[i]]])) %*% t(sources[[i]])
+		lincomb <- int + t(as.matrix(betas[share[[i]]])) %*% t(sources[[i]])
 		mean <- exp(lincomb)
 		
 		#simulate y data
@@ -242,39 +308,31 @@ hospdat <- function(sources, betas, share, int = 5) {
 
 
 
-hospdat2 <- function(sources, betas, share, names, int = 5) {
-	
-	y <- list()
-	#for each monitor
-	for(i in 1 : length(sources)) {
-		y[[i]] <- matrix(nrow = nrow(sources[[i]]), ncol = ncol(sources[[i]]))
-		colnames(y[[i]]) <- names[share[[i]]]
-		for(j in 1 : ncol(sources[[i]])) {
-			#get mean for poisson
-			lincomb <- 5 + betas[share[[i]][j]] * sources[[i]][, j]
-			mean <- exp(lincomb)
-			
-			#simulate y data
-			y[[i]][, j] <- rpois(nrow(sources[[i]]), mean)
-			
-		}
-	}
-	
-	y
-}
-
-
-
 #### Function to simulate mortality effects
+# names is vector of source names 
+#    (e.g. c("traffic", "fireworks", "soil")) corresponding to PCs
+# nmons is number of monitors
+# reps is number of monitors per subregion
+# ndays is number of observations
+# PCs is positive part of PC from sample data
+# keeps is share info for creating data
+# cms is vector of lognormal means for sources
+# sds is vector of lognormal sds for sources
+# etas is vector of % increases for health effects
+# unequal is vector of numbers to switch subregions
+# days is vector of days for each monitor
+# cut is cutoff for eigenvalues (see nmsource), default is 1.
+# thres is threshold for share angle cutoff 
+# int is baseline hosp rate for health effect regression
 outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps, 
-		cms, sds, etas, unequal = NULL, days = NULL, threli = 1,
-		thresang = pi/4, int = 5) {
+		cms, sds, etas, unequal = NULL, days = NULL, cut = 1,
+		thres = pi/4, int = 5) {
 	
 	#create dataset
 	temp <- outerdat(nmons, reps, ndays, PCs, keeps, 
 		cms, sds, unequal, days, sourceout = T)
-	data <- temp[[1]]
-	source <- temp[[2]]	
+	data <- temp$data
+	source <- temp$source	
 	
 	#get all keeps
 	shareT <- list()
@@ -308,39 +366,34 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 	}
 	names(iqrs) <- names
 	
-	
-	
+
 		
 	#perform SHARE
-	dms <- domatchSIM(restrict.data = data, threli = threli, 
-		usedata = T, thresang = thresang)
-	share <- dms[[3]]
-	sources <- dms[[4]]
-	reg <- dms[[1]][[1]]
-	match1 <- as.vector(solve_LSAP(calc.dists(reg, PCs)))
+	share1 <- share(data = data, cut = cut, thres = thres)
+	share <- share1$share
+	sources <- share1$Sources
+	reg <- share1$major.sig
 
-	
-	
 		
 	#perform mAPCA
-	mapca <- spatial.apca(dat = data, lim = 50)
-	mapcasource <- mapca[[1]][[2]]
-	mapca <- as.matrix(mapca[[6]][[2]]$load)
-	
-	
+	mapca <- mAPCA(data = data, lim = 150)$apca
+	mapcasource1 <- mapca$conc
+	mapca <- as.matrix(mapca[["vmax"]]$load)
+                       
+	#get list of mapca results by monitor
+    cn <- which(colnames(mapcasource1) == "mons")
+    mons <- unique(mapcasource1$mons)
+    mapcasource <- list()
+    for(i in 1 : length(mons)) {
+        mapcasource[[i]] <- mapcasource1[which(mapcasource1$mons == mons[i]), -cn]
+    }
+
 	#apply APCA
 	apca <- list()
-	betas <- list()
-	vs <- list()
 	for(i in 1 : length(data)) {
 		nf1 <- length(share[[i]])
-		temp <- abspca(data[[i]], nfactors = nf1)		
-		apca[[i]] <- temp[[1]]
-		betas[[i]] <- temp[[6]]
-		vs[[i]] <- temp[[7]]
+		apca[[i]] <- apca(data = data[[i]], nsources = nf1)$conc
 	}
-	
-	# apca2 <- fixerror2(apca, data, betas, vs, share, sources)
 
 
 	#get hospiatlization data
@@ -348,273 +401,73 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 	y <- hospdat(source, betas, shareT, int)
 
 	#match share to PCs
-	match1 <- as.vector(solve_LSAP(calc.dists(PCs, reg)))
+	match1 <- as.vector(solve_LSAP(angle(PCs, reg)))
 	regnames1 <- names[match1]
 
 	
 	#match mAPCA to PCs
-	match1 <- as.vector(solve_LSAP(calc.dists(PCs, mapca)))
+	match1 <- as.vector(solve_LSAP(angle(PCs, mapca)))
 	regnames2 <- names[match1]
 
-
+    #get regional health effects
 	tlnmAPCA <- tlnout(regnames2, y, mapcasource, "mapca")
 	tlnAPCA <- tlnout(regnames1, y, apca, "apca", share)
-	# tlnAPCA2 <- tlnout(regnames1, y, apca2, "apca", share)
 	tlntruth <- tlnout(names, y, source, "truth", shareT)
 	
 
 	#match results
 	tlnAPCA <- tlnAPCA[match(rownames(tlntruth), rownames(tlnAPCA)), ]
-	# tlnAPCA2 <- tlnAPCA2[match(rownames(tlntruth), rownames(tlnAPCA2)), ]
 	tlnmAPCA <- tlnmAPCA[match(rownames(tlntruth), rownames(tlnmAPCA)), ]
 	
 	#get IQR increase
+    tlnAPCApi <- matrix(nrow = nrow(tlnAPCA), ncol = ncol(tlnAPCA))
+	tlnmAPCApi <- matrix(nrow = nrow(tlnmAPCA), ncol = ncol(tlnmAPCA))
+	tlntruthpi <- matrix(nrow = nrow(tlntruth), ncol = ncol(tlntruth))
 	for(i in 1 : nrow(tlntruth)) {
-		tlnAPCA[i, ] <- percinc(tlnAPCA[i, ], scale = iqrs[i])
-		# tlnAPCA2[i, ] <- percinc(tlnAPCA2[i, ], scale = iqrs[i])
-		tlnmAPCA[i, ] <- percinc(tlnmAPCA[i, ], scale = iqrs[i])
-		tlntruth[i, ] <- percinc(tlntruth[i, ], scale = iqrs[i])
+		tlnAPCApi[i, ] <- percinc(tlnAPCA[i, ], scale = iqrs[i])
+		tlnmAPCApi[i, ] <- percinc(tlnmAPCA[i, ], scale = iqrs[i])
+		tlntruthpi[i, ] <- percinc(tlntruth[i, ], scale = iqrs[i])
 	}
-	out <- list(tlntruth, tlnAPCA, tlnmAPCA)
-	names(out) <- c("truth", "APCA", "mAPCA")
+    
+    out1 <- list(truth = tlntruth, APCA = tlnAPCA, mAPCA = tlnmAPCA)
+    out2 <- list(truth = tlntruthpi, APCA = tlnAPCApi, mAPCA = tlnmAPCApi)
+	out <- list(regcoef = out1, percinc = out2, iqrs = iqrs)
 	out
 }
 
 
-fixerror <- function(apca, share, sources, sim = T) {
-	
-	apcaout <- list()
-	
-	#create list of sources
-	for(i in 1 : length(sources)) {
-		shares <- sapply(share, function(x) {	
-			ifelse(i %in% x, which(x == i), 0)})
-			
-		temp <- 0	
-		dates <- as.Date("1970-01-01")
-		mons <- 0
-		for(j in 1 : length(apca)) {
-			if(shares[j] != 0) {
-				temp2 <- apca[[j]][, shares[j]]
-				if(sim == T) {
-					dates1 <- as.Date(seq(1, nrow(apca[[j]])), 
-					origin = "1970-01-01")
-				}else{
-					dates1 <- apca[[j]][, 1]
-				}
-				
-				
-				dates <- c(dates, dates1)
-				temp <- c(temp, temp2)
-				mons <- c(mons, rep(j, nrow(apca[[j]])))
-			}
-		}
-		temp <- data.frame(dates, temp, mons)
-		temp <- temp[-1, ]
-		
-		#fixed mixed model
-		# lm1 <- lme(temp ~ 1,random = list(mons=~1, dates=~1), data = temp)
-		# random = ~1 | mons + dates, data = temp)
-		# lm1 <- lme(temp ~ 1, random = pdBlocked(list(pdSymm(~mons-1), pdSymm(~dates-1))), data = temp)
-		lm1 <- lmer(temp ~ (1|dates) + (1|mons), data = temp)
-		
-		
-		apcaout[[i]] <- temp
-		
-	}
-	
-	
-	
+
+#####
+# Function to get percent increase corresponding to beta
+# beta is vector of regression coefficients
+# scale is what scale (e.g. IQR increase)
+percinc <- function(beta, scale = 10) {
+    
+    if(!is.na(beta[1])) {
+        100 * (exp(beta * scale ) - 1)
+    }else{
+        beta
+    }
 }
 
 
-
-
-#this is for each source
-getsigma2 <- function(dat, betas, vs, shares) {
-	
-	#for each data
-	all <- c(0, 0, 0, 0)
-	outs <- vector(, length = length(shares))
-	
-	#for each monitor
-	for(i in 1 : length(dat)) {
-		# all <- c(0, 0, 0, 0)
-		
-		#if source at monitor
-		if(shares[i] > 0) {
-		
-		
-		#create iterations
-		for(j in 1 : length(shares)) {
-			
-			#print(c(i, j))
-			temp <- dat[[i]]
-			
-			#if source at monitor
-			if(shares[j] > 0) {
-				
-				
-				vorg <- vs[[i]][, shares[i]]
-				vl <- vs[[j]][, shares[j]]
-				if(sum(vorg * vl) < 0) {
-					#print("rev")
-					vl <- -vl
-				}
-				
-				# names <- names(vl)
-				names <- intersect(names(vl), names(vorg))
-				vl <- vl[names]
-				vorg <- vorg[names]
-												
-				if(length(names) != ncol(temp)) {
-					temp <- temp[, names]					
-				}				
-				
-				sd1 <-  apply(temp, 2, sd)
-				wh0 <- which(sd1 == 0)
-				if(length(wh0) > 0) {
-					# browser()
-					sd1 <- sd1[-wh0]
-					temp <- temp[, -wh0]
-					vl <- vl[-wh0]
-				}
-				
-				sds <- diag(sd1)
-
-				bl <- betas[[i]][shares[i]]
-				# vlbl <- vl * bl
-				vlbl <- vorg * bl
-				
-				#original source concentration
-				f1o <-  temp %*% sds %*% solve(cor(temp)) %*% vlbl
-				#new A
-				a1 <- temp %*% sds %*% solve(cor(temp)) %*% vl
-
-				#scaling param
-				bet <- lm(f1o~ a1)$coef[-1]
-				
-				f1 <- a1 * bet
-
-				if(length(which(is.na(f1))) != 0) { browser()}
-				# f1 <- temp %*% vlbl
-				others1 <- matrix(rep(c(i, j), length(f1)), 
-					byrow= T, ncol = 2)
-					
-
-				time <- seq(1, length(f1))
-				
-				all <- rbind(all, cbind(f1, others1, time))
-			}#end test share
-			
-			
-		}#end loop over shares
-
-
-		}#end test monitor
-	}#end loop over monitor
-	all <- all[-1, ]
-	all <- data.frame(all)
-	# all[, 3] <- paste0(all[, 2], all[, 4])
-	
-	colnames(all) <- c("conc", "mon", "iter", "time")
-	
-	all2 <- data.frame(all, paste0(all$mon, ":", all$time))
-	colnames(all2) <- c(colnames(all), "montime")
-	
-	all2$mon <- factor(all2$mon)
-	all2$time <- factor(all2$time)
-	all2$iter <- factor(all2$iter)
-	
-	all2 <- all2[complete.cases(all2), ]
-	
-
-	outs <- vector()
-	unmon <- as.numeric(as.character(unique(all2$mon)))
-	
-	apca <- list()
-	for(k in 1 : length(dat)) {
-		#print(k)
-		if(k %in% unmon) {
-			temp <- all2[which(all2$mon == k), ]
-			apca[[k]] <- tapply(temp$conc, temp$time, mean, na.rm = T)
-			# dat1 <- all2[which(all2$mon == k), ]
-			# lm1  <- lmer(conc ~ (1 | iter) + 
-				# (1 | time), data = dat1)
-			# outs[k]	<- summary(lm1)$varcor$iter[[1]]
-		}
-	}
-	# outs
-	apca	
-	
-}
-
-##### # code to get sigma, adjusted source est 
-fixerror2 <- function(apca, dat, betas, vs, share, sources, sim = T) {
-	
-	apca1 <- list()
-	apcaout <- list()
-	#for each source
-	for(i in 1 : length(sources)) {
-		shares <- sapply(share, function(x) {	
-			ifelse(i %in% x, which(x == i), 0)})
-		
-		#get vl/bl info
-		
-		#estimate sigma
-		# sigma2 <- getsigma2(dat, betas, vs, shares)
-		apca1[[i]] <- getsigma2(dat, betas, vs, shares)
-		# print(sigma2)
-		# sigma2 <- 0.1
-		
-# # 		#get empirical bayes estimate
-		# for(j in 1 : length(apca)) {
-			# if(i == 1) {
-				# apcaout[[j]] <- apca[[j]]
-			# }
-			# if(shares[j] > 0) {
-				# temp <- apca[[j]][, shares[j]]
-				# mui <- mean(temp)
-				
-				# if(length(sigma2) > 1) {
-					# sigma2U <- sigma2[j]
-				# }else{
-					# sigma2U <- sigma2
-					# }
-				# tau2i <- max(c(0, var(temp) - sigma2U))
-				
-				# B <- sigma2U / (sigma2U + tau2i)
-				# # print(c(sigma2U, tau2i, B))
-				# apcaout[[j]][, shares[j]] <- (1 - B) * temp + B * mui
-			# }
-		# }
-		
-		
-	}
-	
-	
-	#fix order 
-	for(i in 1 : length(apca)) {
-		share1 <- share[[i]]
-		apcaout[[i]] <- matrix(nrow = nrow(apca[[i]]), ncol = length(share1))
-		for(j in 1 : length(share1)) {
-			apcaout[[i]][, j] <- apca1[[share1[j]]][[i]]
-		}
-	}
-	
-	
-	apcaout
-	
+#### function to find match for each row
+#matchmat is matrix of 1/0 matches from matchfun
+whichCS <- function(matchmat) {
+    mins <- apply(matchmat, 1, function(x) suppressWarnings(min(which(x > 0))))
+    mins
+    
 }
 
 
-
-
-
-
-
-
-tlnout <- function(unsources, y, sourceconc, type, share = NULL) {
+######
+# Function to combine regression results
+# unsources is vector of unique sources
+# y is list of health outcome counts
+# sourceconc is list of source concentrations
+# type is type of source apportionment
+# share is which sources for truth/apca
+tlnout <- function(unsources, y, sourceconc, type, share = NULL, print = F) {
 		
 		
 	#for each source
@@ -622,14 +475,16 @@ tlnout <- function(unsources, y, sourceconc, type, share = NULL) {
 	colnames(glmout) <- c("est", "se")
 	rownames(glmout) <- unsources
 	
+    #get results for each source
 	for(i in 1 : length(unsources)) {
 	
-		#for each monitor
 		glm <- matrix(ncol = 2, nrow = length(y))
 		l <- 1
+        
+        #for each monitor
 		for(j in 1 : length(y)) {
-		
-			#get source conc
+			
+            #get appropriate source for apca/truth
 			if(type %in% c("truth", "apca")) {
 				share1 <- share[[j]]
 				
@@ -640,32 +495,35 @@ tlnout <- function(unsources, y, sourceconc, type, share = NULL) {
 					
 					sourceconc1 <- NULL
 				}
+            #take original order for mAPCA
 			}else{
 				sourceconc1 <- sourceconc[[j]][, i]
 				
 			}
 			
+            #perform health effect regression
 			if(!is.null(sourceconc1)) {
 				temp <- try(glm(y[[j]] ~ sourceconc1, 
 					family = "poisson"))
 				if(class(temp)[1] != "try-error" & !(is.na(temp$coef[2]))) {
-					#print(j)
+
 					glm[j, ] <- summary(temp)$coef[-1, c(1, 2)]
-				} #else{ browser()}
+				} 
 			}
 			
 
 		
 		}#end loop over monitors
 		
-	glm <- glm[complete.cases(glm),]
-	if(nrow(glm) > 1) {
+        #combine results across monitors
+	    glm <- glm[complete.cases(glm),]
+    	if(nrow(glm) > 1) {
 		
-		glmout[i, ] <- tlnise(Y = glm[, 1], V = glm[, 2]^2)$gamma[1:2]
+	    	glmout[i, ] <- tlnise(Y = glm[, 1], V = glm[, 2]^2, prnt = print)$gamma[1:2]
 		
-	}else if(nrow(glm) == 1){
-		glmout[i, ] <- glm
-	}
+	    }else if(nrow(glm) == 1){
+	    	glmout[i, ] <- glm
+	    }
 	
 	
 	}#end loop over sources
@@ -676,34 +534,13 @@ tlnout <- function(unsources, y, sourceconc, type, share = NULL) {
 
 
 
+
+
 #####
-# Function to run simulation across iterations
-# nsims is number of iterations, remaining defined above
-multsims <- function(nsims, names, nmons, 
-	reps, ndays, PCs, keeps, cms, sds, 
-	unequal = NULL, days = NULL, 
-	threli = 1, thresang = pi/4) {
-		
-		
-	outs <- matrix(nrow = nsims, ncol = 2)
-	
-	#for each simulation...
-	for(i in 1 : nsims) {
-		
-		outs[i, ] <- outerSIM(names, nmons, 
-			reps, ndays, PCs, keeps, 
-			cms, sds, unequal, days, 
-			threli, thresang)
-	}
-	colnames(outs) <- c("SHARE", "mAPCA")
-	
-	list(outs, colMeans(outs))
-	
-}
-
-
-
-
+# Function to reorder and format simulation study results
+# out is result from outerSIMhosp
+# nr is number of rows
+# sources is names of sources
 reorderout <- function(out, nr, sources) {
 	types <- c("Known", "SHARE", "mAPCA")
 	n <- length(out[[1]]) - length(types)
@@ -735,4 +572,59 @@ reorderout <- function(out, nr, sources) {
 	out <- data.frame(dat, info)
 	colnames(out) <- c("est", "se", "lb", "ub", "Type", "Source", "Sim")
 	out
+}
+
+
+
+
+#### 
+gethospsim <- function(outmult, iqrs) {
+    outres <- list()
+    outresPI <- list()
+    #for each method
+    for(i in 1 : 3) {
+        
+        outres[[i]] <- matrix(nrow = nrow(outmult[[1]][[i]]), ncol = 2)
+        rownames(outres[[i]]) <- rownames(outmult[[1]][[i]])
+        
+        outresPI[[i]] <- outres[[i]]
+        
+        outsel <- sapply(outmult, function(x) x[[i]], simplify = F)
+        for(j in 1 : nrow(outsel[[1]])) {
+            outsel1 <- sapply(outsel, function(x) x[j, ])
+            mn1 <- mean(outsel1[1, ])
+            within <- mean(outsel1[2, ]^2)
+            between <- 1/(ncol(outsel1) - 1) * sum((outsel1[1, ] - mn1)^2) 
+            
+            outres[[i]][j, 1] <- mn1
+            outres[[i]][j, 2] <- sqrt(within + (1 + 1/ncol(outsel1)) * between)
+            
+            outresPI[[i]][j, 1] <- percinc(outres[[i]][j, 1], iqrs[j]) 
+            outresPI[[i]][j, 2] <- percinc(outres[[i]][j, 2], iqrs[j]) 
+            
+        }
+
+        
+
+        
+    }
+    list(regcoef = outres, percinc = outresPI)
+    
+}
+
+
+msefun <- function(percinc, etas, rn)  {
+    
+    #get mse
+    mses1 <- matrix(nrow = nrow(percinc[[1]][[1]]), ncol = 3)
+    rownames(mses1) <- rn
+    colnames(mses1) <- names(percinc[[1]])
+
+    for(i in 1 : 3) {
+        saps1 <- sapply(percinc, function(x) x[[i]][, 1])
+        temp1 <- (sweep(saps1, 1, etas))^2
+        mses1[, i] <- apply(temp1, 1, mean)
+    }
+    mses1
+    
 }
