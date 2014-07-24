@@ -506,7 +506,7 @@ tlnout <- function(unsources, y, sourceconc, type, share = NULL, print = F) {
 	    glm <- glm[complete.cases(glm),]
     	if(nrow(glm) > 1) {
 		
-	    	glmout[i, ] <- tlnise(Y = glm[, 1], V = glm[, 2]^2, prnt = print)$gamma[1:2]
+	    	glmout[i, ] <- tlniseC(Y = glm[, 1], V = glm[, 2]^2, prnt = print)$gamma[1:2]
 		
 	    }else if(nrow(glm) == 1){
 	    	glmout[i, ] <- glm
