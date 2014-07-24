@@ -1,43 +1,25 @@
 # File to run simulation study for SHARE
-# 
+# No health, just source identification
 
-
-########
-#set  directories
-basedir <- "/Users/jennakrall/Dropbox"
-basedir <- "C:/Users/jrkrall/Dropbox"
-home.dir <- file.path(basedir, "SpatialFA")
-dir1 <- file.path(home.dir, "data")
-dircode <- file.path(home.dir, "rcode")
-
-
-#github
-gh <- "https://github.com/kralljr/share_medicare/blob/master/"
-source(file.path(gh, "share_sim_fn.R"))
 
 ########
 #load packages
-#library(devtools)
-#install_github("handles", "kralljr")
-#library(handles)
-#install_github("share", "kralljr")
-#library(share)
+library(devtools)
+install_github("handles", "kralljr")
+library(handles)
+install_github("share", "kralljr")
+library(share)
+install_github("share_medicare", "kralljr", subdir = "sharesim")
+library(sharesim)
 
-#for now, source file
-source(file.path(dircode, "loadfiles_handles_share.R"))
 ########
 
 
 
 ########
 #load data
-load(file.path(dir1, "data_share_sim.RData"))
+data(data_share_sim)
 
-
-
-########
-# load functions
-source(file.path(dircode, "medicare", "share_sim_fn.R"))
 
 
 
