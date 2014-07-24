@@ -17,13 +17,6 @@ library(sharesim)
 
 
 
-########
-#load data
-data(data_share_sim)
-
-
-
-
 
 
 
