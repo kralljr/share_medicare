@@ -26,11 +26,6 @@ data(data_share_sim)
 
 
 
-
-
-
-
-
 #######
 #######
 #######
@@ -40,68 +35,41 @@ data(data_share_sim)
 #######
 #######
 #######
-ns <- 5
+
+#universal values
+ns <- 100
 nd <- 1000
-
 seeds1 <- c(3474, 4866, 3451, 4672, 9165, 2165)
-simout <- list()
+mons <- c(25, 100, 5, 25, 25, 25)
+regs <- c(5, 20, 1, 25, 0, 5)
 
-set.seed(seeds1[1])
-simout[[1]] <- multsims(ns, names, 25, 5, ndays = nd, 
-	PCs = vec, keeps = keeps, 
-	cms = cms, sds = sds)
+#set params for simulation
+keeps1 <- keeps
+uneqs = NULL
+day1 <- NULL
+    
+}else if(seed == 5) {
+    uneqs <- c(12, 15, 16, 20)
+}else if(seed == 6) {
+    day1 <- rep(c(200, 500, 1000, 1000, 5000), each = 5)
+}
 
-
-
-set.seed(seeds1[2])
-simout[[2]] <- multsims(ns, names, 100, 20, ndays = nd, 
-	PCs = vec, keeps = keeps, 
-	cms = cms, sds = sds)
-	
-	
-set.seed(seeds1[3])
-simout[[3]] <- multsims(ns, names, 5, 1, ndays = nd, 
-	PCs = vec, keeps = keeps, 
-	cms = cms, sds = sds)	
-	
-	
-	
-set.seed(seeds1[4])
-simout[[4]] <- multsims(ns, names, 25, 25, ndays = nd, 
-	PCs = vec, keeps = keeps, 
-	cms = cms, sds = sds)	
-	
-
-#unequal
-stops <- c(12, 15, 16, 20)
-#12, 3, 1, 4, 5
-set.seed(seeds1[5])
-simout[[5]]<- multsims(ns, names, 25, 0, ndays = nd, 
-	PCs = vec, keeps = keeps, 
-	cms = cms, sds = sds, unequal = stops)	
-	
-
-
-#days
-days <- rep(c(200, 500, 1000, 1000, 5000), each = 5)
-set.seed(seeds1[6])
-simout[[6]] <- multsims(ns, names, 25, 5, ndays = nd, 
-	PCs = vec, keeps = keeps, 
-	cms = cms, sds = sds, days = days)	
-	
-
-
-library(xtable)
-tabs <- t(sapply(simout, function(x) x[[2]]))
-rownames(tabs) <- c("25", "100", "5", "same", "unequal subregions", "different days")
-xtable(tabs)
+    
+    
+mon <- mons[seed]
+reg <- regs[seed]
+set.seed(seeds1[seed])
 
 
 
+simout <- multsims(nsims = ns, names = names, 
+    nmons = mon, regs = reg, ndays = nd, 
+    PCs = vec, keeps = keeps1, 
+    cms = cms, sds = sds, 
+    unequal = uneqs, days = day1, cut = 1, thres = pi/4)	
 
 
-
-save(simout, file = file.path(cwd, "share_sim_res.RData"))
+save(simout, file = paste0("simout", seed, ".RData"))
 
 
 
