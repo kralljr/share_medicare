@@ -4,7 +4,7 @@
 \title{Share simulations}
 \usage{
 multsims(nsims, names, nmons, reps, ndays, PCs, keeps, cms, sds,
-  unequal = NULL, days = NULL, cut = 1, thres = pi/4)
+  unequal = NULL, days = NULL, cut = 1, thres = pi/4, prnt = F)
 }
 \arguments{
 \item{nsims}{number of iterations}
@@ -32,6 +32,8 @@ multsims(nsims, names, nmons, reps, ndays, PCs, keeps, cms, sds,
 \item{cut}{cutoff for eigenvalues (see nmsource), default is 1.}
 
 \item{thres}{threshold for share angle cutoff}
+
+\item{prnt}{Print simulation iteration (default = F)}
 }
 \description{
 \code{multsims} Performs share simulation for multiple datasets

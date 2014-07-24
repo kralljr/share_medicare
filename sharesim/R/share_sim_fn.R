@@ -18,18 +18,19 @@
 #' @param days vector of days for each monitor
 #' @param cut cutoff for eigenvalues (see nmsource), default is 1.
 #' @param thres threshold for share angle cutoff 
+#' @param prnt Print simulation iteration (default = F)
 #' @export
 multsims <- function(nsims, names, nmons, 
                      reps, ndays, PCs, keeps, cms, sds, 
                      unequal = NULL, days = NULL, 
-                     cut = 1, thres = pi/4) {
+                     cut = 1, thres = pi/4, prnt = F) {
     
     
     outs <- matrix(nrow = nsims, ncol = 2)
     
     #for each simulation...
     for(i in 1 : nsims) {
-        
+        if(prnt) {print(i)}
         outs[i, ] <- outerSIM(names, nmons, 
                               reps, ndays, PCs, keeps, 
                               cms, sds, unequal, days, 
