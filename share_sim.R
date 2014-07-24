@@ -1,6 +1,10 @@
 # File to run simulation study for SHARE
 # No health, just source identification
 
+rm(list = ls())
+args <- commandArgs(TRUE)
+seed <- args[[1]]
+print(seed)
 
 ########
 #load packages
