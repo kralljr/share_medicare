@@ -1,37 +1,24 @@
-#######
-#######
-#######
-#######
-# Functions for creating/analyzing simulated data for SHARE
-#######
-#######
-#######
-#######
-
-
-
-####
-# FUNCTIONS TO RUN SHARE SIM
-
-
-
-#####
-# Function to run simulation across iterations
-#####
-# nsims is number of iterations
-# names is vector of source names 
-#    (e.g. c("traffic", "fireworks", "soil")) corresponding to PCs
-# nmons is number of monitors
-# reps is number of monitors per subregion
-# ndays is number of observations
-# PCs is positive part of PC from sample data
-# keeps is share info for creating data
-# cms is vector of lognormal means for sources
-# sds is vector of lognormal sds for sources
-# unequal is vector of numbers to switch subregions
-# days is vector of days for each monitor
-# cut is cutoff for eigenvalues (see nmsource), default is 1.
-# thres is threshold for share angle cutoff 
+#' Share simulations
+#'
+#' \code{multsims} Performs share simulation for multiple datasets
+#'
+#' This is a function to compare results from SHARE and mAPCA for 
+#' multiple simulated datasets
+#'
+#' @param nsims number of iterations
+#' @param names vector of source names (e.g. c("traffic", "fireworks", "soil")) corresponding to PCs
+#' @param nmons number of monitors
+#' @param reps number of monitors per subregion
+#' @param ndays number of observations
+#' @param PCs positive part of PC from sample data
+#' @param keeps share info for creating data
+#' @param cms vector of lognormal means for sources
+#' @param sds vector of lognormal sds for sources
+#' @param unequal vector of numbers to switch subregions
+#' @param days vector of days for each monitor
+#' @param cut cutoff for eigenvalues (see nmsource), default is 1.
+#' @param thres threshold for share angle cutoff 
+#' @export
 multsims <- function(nsims, names, nmons, 
                      reps, ndays, PCs, keeps, cms, sds, 
                      unequal = NULL, days = NULL, 
@@ -59,23 +46,23 @@ multsims <- function(nsims, names, nmons,
 
 
 
-
-#######
-# Function to run simulation for one set of data
-#######
-# names is vector of source names 
-#    (e.g. c("traffic", "fireworks", "soil")) corresponding to PCs
-# nmons is number of monitors
-# reps is number of monitors per subregion
-# ndays is number of observations
-# PCs is positive part of PC from sample data
-# keeps is share info for creating data
-# cms is vector of lognormal means for sources
-# sds is vector of lognormal sds for sources
-# unequal is vector of numbers to switch subregions
-# days is vector of days for each monitor
-# cut is cutoff for eigenvalues (see nmsource), default is 1.
-# thres is threshold for share angle cutoff 
+#' \code{outerSIM} Performs share simulation for one dataset
+#'
+#' This is a function to compare results from SHARE and mAPCA for 
+#' one simulated dataset
+#'
+#' @param names vector of source names (e.g. c("traffic", "fireworks", "soil")) corresponding to PCs
+#' @param nmons number of monitors
+#' @param reps number of monitors per subregion
+#' @param ndays number of observations
+#' @param PCs positive part of PC from sample data
+#' @param keeps share info for creating data
+#' @param cms vector of lognormal means for sources
+#' @param sds vector of lognormal sds for sources
+#' @param unequal vector of numbers to switch subregions
+#' @param days vector of days for each monitor
+#' @param cut cutoff for eigenvalues (see nmsource), default is 1.
+#' @param thres threshold for share angle cutoff 
 outerSIM <- function(names, nmons, reps, ndays, PCs, keeps, 
                      cms, sds, unequal = NULL, days = NULL, cut = 1,
                      thres = pi/4) {

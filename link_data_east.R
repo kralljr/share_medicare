@@ -1,4 +1,4 @@
-#File to get monitors for medicare analysis
+#File to get data for medicare analysis
 
 
 #specify directories
