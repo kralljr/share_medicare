@@ -7,13 +7,10 @@ seed <- args[[1]]
 print(seed)
 
 ########
-#load packages
+#load packages (make sure recent versions are installed)
 library(devtools)
-install_github("handles", "kralljr")
 library(handles)
-install_github("share", "kralljr")
 library(share)
-install_github("share_medicare", "kralljr", subdir = "sharesim")
 library(sharesim)
 
 ########
