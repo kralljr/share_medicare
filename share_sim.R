@@ -60,7 +60,7 @@ simout <- multsims(nsims = ns, names = names,
     nmons = mon, reps = reg, ndays = nd, 
     PCs = vec, keeps = keeps1, 
     cms = cms, sds = sds, 
-    unequal = uneqs, days = day1, cut = 1, thres = pi/4)	
+    unequal = uneqs, days = day1, cut = 1, thres = pi/4, prnt = T)	
 
 
 save(simout, file = paste0("simout", seed, ".RData"))
