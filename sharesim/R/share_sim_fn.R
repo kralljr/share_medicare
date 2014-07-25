@@ -296,25 +296,31 @@ hospdat <- function(sources, betas, share, int = 5) {
 
 
 
-#### Function to simulate mortality effects
-# names is vector of source names 
-#    (e.g. c("traffic", "fireworks", "soil")) corresponding to PCs
-# nmons is number of monitors
-# reps is number of monitors per subregion
-# ndays is number of observations
-# PCs is positive part of PC from sample data
-# keeps is share info for creating data
-# cms is vector of lognormal means for sources
-# sds is vector of lognormal sds for sources
-# etas is vector of % increases for health effects
-# unequal is vector of numbers to switch subregions
-# days is vector of days for each monitor
-# cut is cutoff for eigenvalues (see nmsource), default is 1.
-# thres is threshold for share angle cutoff 
-# int is baseline hosp rate for health effect regression
+
+#' \code{outerSIMhosp} Performs share simulation for health effects for one dataset
+#'
+#' This is a function to compare results from SHARE and mAPCA for 
+#' one simulated dataset
+#'
+#' @param names vector of source names (e.g. c("traffic", "fireworks", "soil")) corresponding to PCs
+#' @param nmons number of monitors
+#' @param reps number of monitors per subregion
+#' @param ndays number of observations
+#' @param PCs positive part of PC from sample data
+#' @param keeps share info for creating data
+#' @param cms vector of lognormal means for sources
+#' @param sds vector of lognormal sds for sources
+#' @param etas vector of % increases for health effects
+#' @param unequal vector of numbers to switch subregions
+#' @param days vector of days for each monitor
+#' @param cut cutoff for eigenvalues (see nmsource), default is 1.
+#' @param thres threshold for share angle cutoff 
+#' @param int baseline hosp rate for health effect regression
+#' @param prnt Print simulation iteration (default = F)
+#' @export
 outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps, 
 		cms, sds, etas, unequal = NULL, days = NULL, cut = 1,
-		thres = pi/4, int = 5) {
+		thres = pi/4, int = 5, prnt = F) {
 	
 	#create dataset
 	temp <- outerdat(nmons, reps, ndays, PCs, keeps, 
@@ -425,18 +431,7 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 
 
 
-#####
-# Function to get percent increase corresponding to beta
-# beta is vector of regression coefficients
-# scale is what scale (e.g. IQR increase)
-percinc <- function(beta, scale = 10) {
-    
-    if(!is.na(beta[1])) {
-        100 * (exp(beta * scale ) - 1)
-    }else{
-        beta
-    }
-}
+
 
 
 #### function to find match for each row
@@ -507,8 +502,12 @@ tlnout <- function(unsources, y, sourceconc, type, share = NULL, print = F) {
 	    glm <- glm[complete.cases(glm),]
     	if(nrow(glm) > 1) {
 		
-	    	glmout[i, ] <- tlniseC(Y = glm[, 1], V = glm[, 2]^2, prnt = print)$gamma[1:2]
-		
+	    	temp <- tlniseC(Y = glm[, 1], V = glm[, 2]^2, prnt = print, brief = 2)
+            if(temp$converge == "no") {
+                temp <- tlniseC(Y = glm[, 1], V = glm[, 2]^2, 
+                    prnt = print, brief = 2, maxiter = 5000)
+            }
+		    glmout[i, ] <- temp$gamma[1:2]
 	    }else if(nrow(glm) == 1){
 	    	glmout[i, ] <- glm
 	    }
@@ -524,11 +523,12 @@ tlnout <- function(unsources, y, sourceconc, type, share = NULL, print = F) {
 
 
 
-#####
-# Function to reorder and format simulation study results
-# out is result from outerSIMhosp
-# nr is number of rows
-# sources is names of sources
+#' \code{reorderout} Get outcome
+#'
+#' @param out regression outcomes
+#' @param sources sources
+#' @param rn rownames
+#' @export
 reorderout <- function(out, nr, sources) {
 	types <- c("Known", "SHARE", "mAPCA")
 	n <- length(out[[1]]) - length(types)
@@ -565,7 +565,12 @@ reorderout <- function(out, nr, sources) {
 
 
 
-#### 
+
+#' \code{gethospsim} Get outcome
+#'
+#' @param outmult regression outcomes
+#' @param iqrs iqrs
+#' @export
 gethospsim <- function(outmult, iqrs) {
     outres <- list()
     outresPI <- list()
@@ -601,6 +606,14 @@ gethospsim <- function(outmult, iqrs) {
 }
 
 
+
+
+#' \code{msefun} Get MSE for results
+#'
+#' @param percinc results for percent increase
+#' @param etas vector of % increases for health effects
+#' @param rn rownames
+#' @export
 msefun <- function(percinc, etas, rn)  {
     
     #get mse
