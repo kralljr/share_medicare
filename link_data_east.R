@@ -105,6 +105,7 @@ whCN <- c(1, whPM, whCN)
 keep <- vector(, length = nrow(monsKEEP))
 datall <- list()
 unmons <- list()
+
 for(i in 1 : nrow(monsKEEP)) {
 	
 	#get speciation data
@@ -135,6 +136,8 @@ monsKEEP <- monsKEEP[which(keep == 1), ]
 datall <- datall[which(keep == 1)]
 unmons <- unmons[which(keep == 1)]
 
+
+names(datall) <- monsKEEP[[3]]
 
 
 # save(monsKEEP, datall, unmons, file = "speciation_medicare.RData")
