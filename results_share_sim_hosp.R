@@ -1,5 +1,5 @@
 # File to get results for share simulation for hospitalizations
-setwd("~/Dropbox/SpatialFA/rcode/medicare/")
+setwd("~/Dropbox/SpatialFA/rcode/medicare/rdata")
 
 library(sharesim)
 library(Hmisc)
