@@ -1,36 +1,11 @@
 #####  File to get associations between hospitalizations and sources in east
 
-# set working directories
-dircode <- ("~/Dropbox/SpatialFA/rcode")
-home.dir <- "~/Dropbox/SpatialFA"
 
+rm(list = ls())
+args <- commandArgs(TRUE)
+lagi <- as.numeric(args[[1]])
+print(lagi)
 
-
-#get data
-load("/Users/jennakrall/Dropbox/PM25cons_mort/FinalR_815/Healtheffectsdata_17aug11.RData")
-# load("/Users/jennakrall/Dropbox/PM25cons_mort/FinalR_815/Prednaivedata_17aug11.RData")
-# spec <- readRDS("~/Dropbox/SpatialFA/data/speciation_monitors.rds")
-counties <- readRDS("/Users/jennakrall/Dropbox/PM25cons_mort/cities/nmmaps_counties.rds")
-
-load(file.path(home.dir, "data/pvdeast_medicare.RData"))
-load(file.path(home.dir, "data/mort_sources_medicare.RData"))
-load(file.path(home.dir, "data/sourceconc_medicare.RData"))
-
-#datall, monsKEEP, unmons
-load(file.path(home.dir, "data/speciation_medicare.RData"))
-
-load("/Users/jennakrall/Dropbox/SpatialFA/data/link_east_county.RData")
-
-
-#load other libraries
-library(splancs)
-library(gpclib)
-library(splines)
-library(tsModel)
-library(tlnise)
-library(chron)
-library(timeDate)
-library(ggplot2)
 
 
 #load my libraries
@@ -41,33 +16,68 @@ library(sharesim)
 
 
 
+#######
+# get constituent data
+data(unmonlist)
+load("speciation_medicare.RData")
+data.rr <- lapply(datall, function(x) {
+    x[, -c(2)]
+})
+pm25 <- lapply(datall, function(x) x[, 2])
+##########
 
 
 
+
+
+
+
+
+#######
+# get medicare data
+med.path <- "/dexter/disk2/rpeng/medicare/MCAPS1999-2010"
+fips <- names(unmonlist)
+healthdat <- list()
+for(i in 1 : length(fips)) {
+    dat <- try(readRDS(file.path(med.path, paste0(fips[i], ".rds"))))
+    #get running temp, format data    
+    healthdat[[i]] <- rest.data(dat)
+    
+}
+names(healthdat) <- fips
 
 ########
+
+
+
+
+
+
+
 
 ########
 # Perform SHARE and mAPCA
-sharehealth <- function(consdata, healthdata = NULL, list = NULL, 
-                        formula = NULL, iqrs = NULL,
-                        lag = NULL, groupvar = NULL, print = F, 
-                        cut = 1, thres = pi/4,
-                        tots = NULL, method = "SHARE") {
+form1 <- "factor(agecat) + factor(dow) + ns(tmpd, df = 6) + ns(tmp3, df = 6)  + ns(dptp, df = \
+3) + ns(dpt3, df = 3) + ns(date, df = 8 * "
+gv <- "agecat"
+
+
+share <- sharehealth(data.rr, healthdata = healthdat, 
+    tots = pm25, list = unmonlist, 
+    formula = form1, lag = lagi, groupvar = gv)
     
-share <- list()
-mapca <- list()
-for(i in 1 : 3) {
-    share[[i]] <- sharehealth(data.rr, tots = pm25, list = unmonlist, 
-        formula = form1, lag = i, groupvar = gv)
-    iqrs <- share$summary[, "IQR"]
-    mapca[[i]] <- sharehealth(data.rr, tots = pm25, list = unmonlist, method = "mapca", 
-        formula = form1, iqrs = iqrs, lag = i, groupvar = gv)
-}
-names(share) <- paste0("lag", seq(0, 2))
-names(mapca) <- paste0("lag", seq(0, 2))
+iqrs <- share$summary[, "IQR"]
+    
+mapca <- sharehealth(data.rr, healthdata = healthdat, 
+    tots = pm25, 
+    list = unmonlist, method = "mapca", 
+        formula = form1, iqrs = iqrs, lag = lagi, groupvar = gv)
 
 
+
+save(share, mapca, file = paste("east_hosp_lag", lagi, ".RData"))
+
+#########
 
 
 
