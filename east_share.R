@@ -5,8 +5,6 @@
 home.dir <- "~/Dropbox/SpatialFA/"
 dir1 <- file.path(home.dir, "data")
 paperdir <- file.path(home.dir, "paper_spatialfa/figs")
-# save.dir <- file.path(home.dir, "")
-save.dir <- home.dir
 
 #Load my packages
 library(share)
