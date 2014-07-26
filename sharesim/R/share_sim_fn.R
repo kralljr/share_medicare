@@ -580,21 +580,29 @@ gethospsim <- function(outmult, iqrs) {
         outres[[i]] <- matrix(nrow = nrow(outmult[[1]][[i]]), ncol = 2)
         rownames(outres[[i]]) <- rownames(outmult[[1]][[i]])
         
-        outresPI[[i]] <- outres[[i]]
+        outresPI[[i]] <- matrix(nrow = nrow(outmult[[1]][[i]]), ncol = 3)
+        colnames(outresPI[[i]]) <- c("est", "lb", "ub")
         
         outsel <- sapply(outmult, function(x) x[[i]], simplify = F)
         for(j in 1 : nrow(outsel[[1]])) {
             outsel1 <- sapply(outsel, function(x) x[j, ])
-            mn1 <- mean(outsel1[1, ])
-            within <- mean(outsel1[2, ]^2)
-            between <- 1/(ncol(outsel1) - 1) * sum((outsel1[1, ] - mn1)^2) 
+            mn1 <- mean(outsel1[1, ], na.rm = T, trim = 0.1)
+            within <- mean(outsel1[2, ]^2, na.rm = T, trim = 0.1)
+            
+            between1 <- (outsel1[1, ] - mn1)^2
+            between1 <- mean(between1, na.rm = T, trim = 0.1)
+            between <- ncol(outsel1)/(ncol(outsel1) - 1) * between1
             
             outres[[i]][j, 1] <- mn1
-            outres[[i]][j, 2] <- sqrt(within + (1 + 1/ncol(outsel1)) * between)
+            sd1 <- sqrt(within + (1 + 1/ncol(outsel1)) * between)
+            outres[[i]][j, 2]  <- sd1
+            
+            lb <- mn1 - 1.96 * sd1
+            ub <- mn1 + 1.96 * sd1
             
             outresPI[[i]][j, 1] <- percinc(outres[[i]][j, 1], iqrs[j]) 
-            outresPI[[i]][j, 2] <- percinc(outres[[i]][j, 2], iqrs[j]) 
-            
+            outresPI[[i]][j, 2] <- percinc(lb, iqrs[j]) 
+            outresPI[[i]][j, 3] <- percinc(ub, iqrs[j])  
         }
 
         
@@ -624,7 +632,7 @@ msefun <- function(percinc, etas, rn)  {
     for(i in 1 : 3) {
         saps1 <- sapply(percinc, function(x) x[[i]][, 1])
         temp1 <- (sweep(saps1, 1, etas))^2
-        mses1[, i] <- apply(temp1, 1, mean)
+        mses1[, i] <- apply(temp1, 1, mean, na.rm = T, trim = 0.1)
     }
     mses1
     
