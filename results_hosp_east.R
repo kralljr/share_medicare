@@ -13,7 +13,7 @@ name <- "east_hosp_lag"
 mapca1 <- list()
 share1 <- list()
 for(i in 1 : 3) {
-    load(paste(name, i, ".RData"))
+    load(paste0(name, i - 1, ".RData"))
     mapca1[[i]] <- mapca
     share1[[i]] <- share
 }
@@ -34,14 +34,21 @@ matches <- whichCS(matchfun(list(sharem), mapcam, thres = 70 * pi/180)$match[[1]
 
 names1 <- c("Metals","Soil", "Sec. Sulfate","Fireworks", 
             "Salt", "P/V",  "Residual oil",  "As/Se/Br", "Traffic")
-
+iqrs <- share$summary[, "IQR"]
 sumfun <- function(x, type = "share") {
-    x <- x$iqrinc
+    #x <- x$iqrinc
+    x <- x$regcoef
+    
     if(type == "share") {
-        x <- data.frame(x[[1]], x[[2]])
+        #x <- data.frame(x[[1]], x[[2]])
     }else if(type != "share") {
         x <- suppressWarnings(x[matches, ])
     }
+    
+    for(j in 1 : nrow(x)) {
+        x[j, ] <- percinc(x[j, ], scale = iqrs[j])
+    }
+    
     x <- data.frame(names1, x)
     colnames(x) <- c("source", "est", "se")
     x
@@ -104,10 +111,20 @@ res <- data.frame(res, inds, ub2, lb2)
 
 limits <- aes(ymax = ub, ymin= lb)
 
+#order by value of share for lag 0
 
-# s1 <- c("Metals", "Traffic", "Residual oil", "Soil", "Salt", "Sec. Sulfate")
-# res <- res[which(res$source %in% s1), ]
-# res$source <- factor(res$source, levels = s1)
+
+
+s1 <- c("Metals", "Traffic", "Residual oil", "Soil", "Salt", "Sec. Sulfate")
+
+est <- share1[[1]]$iqrinc[[1]]
+rownames(est) <- capitalize(names1)
+est <- est[rownames(est) %in% s1, , drop = F]
+ord1 <- rownames(est)[order(est, decreasing = T)]
+
+res <- res[which(res$source %in% s1), ]
+
+res$source <- factor(res$source, levels = ord1)
 
 
 
@@ -179,9 +196,9 @@ gplot1 <- function(lag, dat = tln3) {
 
 
 setwd(plot.dir)
-# pdf("hosp_east_lag012.pdf", height = 10, width = 7)
+pdf("hosp_east_lag012.pdf", height = 10, width = 7)
 gplot1(c(0,1, 2), dat = res)
-# graphics.off()
+graphics.off()
 
 
 # ###########	
