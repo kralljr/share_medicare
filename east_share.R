@@ -27,7 +27,7 @@ data.rr <- lapply(datall, function(x) {
     x[, -c(2)]
 })
 pm25 <- lapply(datall, function(x) x[, 2])
-
+names(data.rr) <- monsKEEP[, 3]
 
 
 
@@ -39,7 +39,6 @@ pm25 <- lapply(datall, function(x) x[, 2])
 
 share <- sharehealth(data.rr, tots = pm25, list = unmonlist)
 mapca <- sharehealth(data.rr, tots = pm25, list = unmonlist, method = "mapca")
-
 
 
 
@@ -92,7 +91,7 @@ simpleCap <- function(x) {
 }
 
 names <- c("Metals", "Soil", "Sec. Sulfate", "Fireworks", 
-           "Salt", "P/V", "Residual oil", "Power plants", "Traffic")
+           "Salt", "P/V", "Residual oil", "As/Se/Br", "Traffic")
 
 
 summ <- data.frame(names, share$summary[, c("monitor", "counties", "cons", "IQR")])
