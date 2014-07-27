@@ -94,7 +94,7 @@ names <- c("Metals", "Soil", "Sec. Sulfate", "Fireworks",
            "Salt", "P/V", "Residual oil", "As/Se/Br", "Traffic")
 
 
-summ <- data.frame(names, share$summary[, c("monitor", "counties", "cons", "IQR")])
+summ <- data.frame(names, share$summary[, c("monitor", "counties", "cons", "Median", "IQR")])
 summ$IQR <- round(summ$IQR, 2)
 temp <- sapply(as.character(summ$cons), function(x) {
     x <- strsplit(x, ", ")[[1]]
@@ -109,7 +109,11 @@ temp <- sapply(as.character(summ$cons), function(x) {
     paste(x, collapse = ", ")
     }, simplify = T)
 summ$cons <- temp
+
 colnames(summ) <- c("Sources", "Monitors", "Counties", "Major constituents", "IQR")
+
+summ$Monitors <- as.integer(summ$Monitors)
+summ$Counties <- as.integer(summ$Counties)
 
 print(xtable(summ), include.rownames = F)
 
