@@ -8,6 +8,9 @@ plot.dir <- "~/Dropbox/SpatialFA/paper_spatialfa/figs/"
 library(ggplot2)
 library(plyr)
 library(RColorBrewer)
+library(share)
+library(sharesim)
+library(Hmisc)
 
 name <- "east_hosp_lag"
 mapca1 <- list()
@@ -155,27 +158,32 @@ sizep <- 1.2
 pd <- position_dodge(.4)
 
 
-col1 <- brewer.pal(5, "Blues")[3:5]
-col1 <- brewer.pal(5, "Dark2")[c(1, 4)]
-col1 <- brewer.pal(8, "Set1")[1:2]
+#color
 col1 <- c("indianred3", col1[2])
-gplot1 <- function(lag, dat = tln3) {
+#bw
+col1 <- c("black", "grey50")
+gplot1 <- function(lag, dat = tln3, nc = 1) {
     dat <- dat[which(dat$lag %in% paste("Lag", lag)), ]
     
-    g1 <- ggplot(dat, aes(x = source, y = est, colour = method), 
-                 ylim = c(-0.01, 0.01)) + 
+    g1 <- ggplot(dat, aes(x = source, y = est, 
+    		colour = method, shape = method), 
+        	ylim = c(-0.01, 0.01)) + 
         geom_hline(aes(yintercept = 0), colour = "grey80", 
                    linetype = "dashed") +
-        geom_pointrange(aes(ymin = lb2, ymax = ub2, colour = method), 
-                        width = 0.1, position = pd, size = sizep) +
-        scale_color_manual( labels=c("SHARE", "mAPCA"), name = "",
-                            values = col1) + 	
+        geom_pointrange(aes(ymin = lb2, 
+        	ymax = ub2, colour = method), 
+            width = 0.1, position = pd, size = sizep) +
+        theme_bw() + 
+        scale_color_manual( labels=c("SHARE", "mAPCA"), 
+        	name = "", values = col1) + 
+        scale_shape( labels=c("SHARE", "mAPCA"), 
+        	name = "") + 	
         ylab(expression(atop("% increase in CVD hospitalizations per", 
-                             "IQR increase in source concentration"))) +
+           	"IQR increase in source concentration"))) +
         xlab("") +
         # ggtitle("Mortality effects by\nsource apportionment method") +
         scale_y_continuous(limits=c(lb1, ub1))      +         
-        theme_bw() +        
+        theme_bw() +  
         theme(axis.text.y=element_text(size=size1)) +
 
         theme(axis.title=element_text(size=size1)) 
@@ -185,7 +193,7 @@ gplot1 <- function(lag, dat = tln3) {
                                               vjust = 1, angle = 45))
     g1 <- g1 + theme(strip.text.x = element_text(size = size1))
     if(length(lag) > 1) {
-        g1 <- g1 + facet_wrap(~lag, ncol = 1) 
+        g1 <- g1 + facet_wrap(~lag, ncol = nc) 
     }
     g1 <- g1	+ theme(strip.text.y = element_text(size = size1))
     
@@ -198,6 +206,13 @@ gplot1 <- function(lag, dat = tln3) {
 setwd(plot.dir)
 pdf("hosp_east_lag012.pdf", height = 10, width = 7)
 gplot1(c(0,1, 2), dat = res)
+graphics.off()
+
+
+
+setwd(plot.dir)
+pdf("hosp_east_lag0.pdf", height = 7, width = 10)
+gplot1(c(0), dat = res)
 graphics.off()
 
 

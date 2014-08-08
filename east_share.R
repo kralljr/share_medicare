@@ -136,10 +136,10 @@ lwd1 <- 1
 cols <- c(1, "grey50")
 
 #set size, color
-lwd1 <- 2
-cex1 <- 3
-cex2 <- 2
-cols <- brewer.pal(8, "Dark2")
+# lwd1 <- 2
+# cex1 <- 3
+# cex2 <- 2
+# cols <- brewer.pal(8, "Dark2")
 #cols <- c("darkolivegreen3", "orange")
 
 m1 <- map("state", fill = TRUE, col = "grey60",
@@ -160,7 +160,7 @@ Sources <- Sources[!is.infinite(Sources)]
 for(i in Sources) {
     plot(m1$x, m1$y, type = "l", xlim = c(-90, -69),
          ylim = c(36, 45), xlab = "", ylab = "", 
-         cex.axis = 2, axes = F)
+         cex.axis = 2, axes = F, col = "grey70")
     keeps <- sapply(share$share, function(x) {
         ifelse(i %in% x, 1, 0)
     })
