@@ -23,7 +23,7 @@
 multsims <- function(nsims, names, nmons, 
                      reps, ndays, PCs, keeps, cms, sds, 
                      unequal = NULL, days = NULL, 
-                     cut = 1, thres = pi/4, prnt = F) {
+                     cut = 1, thres = pi/4, prnt = F, sderr = 0.01) {
     
     
     outs <- matrix(nrow = nsims, ncol = 2)
@@ -34,7 +34,7 @@ multsims <- function(nsims, names, nmons,
         outs[i, ] <- outerSIM(names, nmons, 
                               reps, ndays, PCs, keeps, 
                               cms, sds, unequal, days, 
-                              cut, thres)
+                              cut, thres, sderr)
     }
     colnames(outs) <- c("SHARE", "mAPCA")
     
@@ -66,11 +66,11 @@ multsims <- function(nsims, names, nmons,
 #' @param thres threshold for share angle cutoff 
 outerSIM <- function(names, nmons, reps, ndays, PCs, keeps, 
                      cms, sds, unequal = NULL, days = NULL, cut = 1,
-                     thres = pi/4) {
+                     thres = pi/4, sderr = 0.01) {
     
     #create dataset
     data <- outerdat(nmons, reps, ndays, PCs, keeps, 
-                     cms, sds, unequal, days)
+                     cms, sds, unequal, days, sderr)
 
     #perform SHARE
     share1 <- share(data, cut = cut, thres = thres)
@@ -181,7 +181,7 @@ switchfun <- function(reps, i, start) {
 # sources is which sources in vec to keep
 # cm is lognormal means
 # sd is lognormal sds
-createdat <- function(nr, vec, sources, cm, sd) {
+createdat <- function(nr, vec, sources, cm, sd, sderr = 0.01) {
 	#keep which sources
 	vec2 <- as.matrix(vec[, sources])
 	
@@ -202,7 +202,7 @@ createdat <- function(nr, vec, sources, cm, sd) {
 	
 	#add lognormal errors
 	n <- nrow(dattemp) * ncol(dattemp)
-	errs <- matrix(rlnorm(n, sd = 0.01), nrow = nrow(dattemp))
+	errs <- matrix(rlnorm(n, sd = sderr), nrow = nrow(dattemp))
 	dattemp <- dattemp * errs
 	
     #add date
@@ -229,7 +229,8 @@ createdat <- function(nr, vec, sources, cm, sd) {
 # unequal is number of monitors for each subregion if unequal
 # days is number of days for each monitor if days
 outerdat <- function(nmons, reps, ndays = 1000, PCs, keeps, 
-	cms, sds, unequal = NULL, days = NULL, sourceout = NULL) {
+	cms, sds, unequal = NULL, days = NULL, sourceout = NULL,
+	sderr = 0.01) {
 		
 	datnew <- list()
 	source <- list()
@@ -244,7 +245,7 @@ outerdat <- function(nmons, reps, ndays = 1000, PCs, keeps,
 		}
 		
 		#create data and save
-		temp <- createdat(ndays, PCs, keeps[[l]], cms, sds)
+		temp <- createdat(ndays, PCs, keeps[[l]], cms, sds, sderr)
 		datnew[[i]] <- temp$data
 		source[[i]] <- temp$source
 		
@@ -320,11 +321,11 @@ hospdat <- function(sources, betas, share, int = 5) {
 #' @export
 outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps, 
 		cms, sds, etas, unequal = NULL, days = NULL, cut = 1,
-		thres = pi/4, int = 5, prnt = F) {
+		thres = pi/4, int = 5, prnt = F, sderr = 0.01) {
 	
 	#create dataset
 	temp <- outerdat(nmons, reps, ndays, PCs, keeps, 
-		cms, sds, unequal, days, sourceout = T)
+		cms, sds, unequal, days, sourceout = T, sderr)
 	data <- temp$data
 	source <- temp$source	
 	
