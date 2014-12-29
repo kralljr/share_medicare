@@ -17,7 +17,9 @@ library(sharesim)
 
 
 
-
+########
+# try new combination
+load("data_share_sim_revisedcombo.RData")
 
 
 #######
