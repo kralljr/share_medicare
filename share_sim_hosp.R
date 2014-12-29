@@ -22,6 +22,9 @@ library(sharesim)
 #load data
 data(keeps, cms, sds, vec, names)
 
+# new combo of sources
+load("~/SHARE/sharesim/data_share_sim_revisedcombo.RData")
+
 
 #set up info
 nmons <- 25
