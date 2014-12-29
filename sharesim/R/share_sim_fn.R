@@ -34,7 +34,7 @@ multsims <- function(nsims, names, nmons,
         outs[i, ] <- outerSIM(names, nmons, 
                               reps, ndays, PCs, keeps, 
                               cms, sds, unequal, days, 
-                              cut, thres, sderr)
+                              cut, thres, sderr = sderr)
     }
     colnames(outs) <- c("SHARE", "mAPCA")
     
@@ -70,7 +70,7 @@ outerSIM <- function(names, nmons, reps, ndays, PCs, keeps,
     
     #create dataset
     data <- outerdat(nmons, reps, ndays, PCs, keeps, 
-                     cms, sds, unequal, days, sderr)
+                     cms, sds, unequal, days, sderr = sderr)
 
     #perform SHARE
     share1 <- share(data, cut = cut, thres = thres)
@@ -245,7 +245,7 @@ outerdat <- function(nmons, reps, ndays = 1000, PCs, keeps,
 		}
 		
 		#create data and save
-		temp <- createdat(ndays, PCs, keeps[[l]], cms, sds, sderr)
+		temp <- createdat(ndays, PCs, keeps[[l]], cms, sds, sderr = sderr)
 		datnew[[i]] <- temp$data
 		source[[i]] <- temp$source
 		
@@ -325,7 +325,7 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 	
 	#create dataset
 	temp <- outerdat(nmons, reps, ndays, PCs, keeps, 
-		cms, sds, unequal, days, sourceout = T, sderr)
+		cms, sds, unequal, days, sourceout = T, sderr = sderr)
 	data <- temp$data
 	source <- temp$source	
 	
