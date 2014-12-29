@@ -9,7 +9,8 @@
 #######
 
 
-basedir <- "C:/Users/jrkrall/Dropbox"
+#basedir <- "C:/Users/jrkrall/Dropbox"
+basedir <- "~/Dropbox"
 home.dir <- file.path(basedir, "SpatialFA")
 dir1 <- file.path(home.dir, "data")
 load(file.path(dir1, "speciation_medicare.RData"))
@@ -68,5 +69,30 @@ keeps[[4]] <- seq(1, nc)[-c(1, 2, 4)]
 keeps[[5]] <- seq(1, nc)[-c(1, 2, 5)]
 
 
-save(dat, names, vec, keeps, cms, sds, 
+#save(dat, names, vec, keeps, cms, sds, 
     file = file.path(dir1, "data_share_sim.RData"))
+    
+    
+    
+    
+    
+    
+# Revised simulation data
+names <- names[1 : 7]
+keeps <- list()
+# all sources
+keeps[[1]] <- seq(1, nc)
+# no salt or metals
+keeps[[2]] <- seq(1, nc)[-c(1, 5)]
+# no traffic, salt, metals
+keeps[[3]] <- seq(1, nc)[-c(1, 5, 6)]
+# no salt, metals, fireworks
+keeps[[4]] <- seq(1, nc)[-c(2, 5, 6)]
+# no salt, metals, P/V
+keeps[[5]] <- seq(1, nc)[-c(2, 5, 7)]
+
+
+save(dat, names, vec, keeps, cms, sds, 
+    file = file.path(dir1, "data_share_sim_revisedcombo.RData"))
+    
+    
