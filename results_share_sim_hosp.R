@@ -196,9 +196,5 @@ g1 <- g1	+ theme(strip.text.y = element_text(size = size1)) +
 g1 <- g1 + theme(legend.justification=c(0,0), legend.position="right")
 
 
-
-pdf(file.path("~/Dropbox/SpatialFA/plots", "hosp_sim.pdf"), height = 6, width = 15)
 g1
-graphics.off()
-
 
