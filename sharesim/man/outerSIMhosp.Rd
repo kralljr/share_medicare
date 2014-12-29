@@ -24,7 +24,7 @@ outerSIMhosp(names, nmons, reps, ndays, PCs, keeps, cms, sds, etas,
 
 \item{sds}{vector of lognormal sds for sources}
 
-\item{etas}{vector of % increases for health effects}
+\item{etas}{vector of percent increases for health effects}
 
 \item{unequal}{vector of numbers to switch subregions}
 

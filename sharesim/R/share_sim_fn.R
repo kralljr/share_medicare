@@ -311,7 +311,7 @@ hospdat <- function(sources, betas, share, int = 5) {
 #' @param keeps share info for creating data
 #' @param cms vector of lognormal means for sources
 #' @param sds vector of lognormal sds for sources
-#' @param etas vector of % increases for health effects
+#' @param etas vector of percent increases for health effects
 #' @param unequal vector of numbers to switch subregions
 #' @param days vector of days for each monitor
 #' @param cut cutoff for eigenvalues (see nmsource), default is 1.
