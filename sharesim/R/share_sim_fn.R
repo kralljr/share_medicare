@@ -620,7 +620,7 @@ gethospsim <- function(outmult, iqrs) {
 #' \code{msefun} Get MSE for results
 #'
 #' @param percinc results for percent increase
-#' @param etas vector of % increases for health effects
+#' @param etas vector of percent increases for health effects
 #' @param rn rownames
 #' @export
 msefun <- function(percinc, etas, rn)  {

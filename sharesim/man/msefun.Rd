@@ -8,7 +8,7 @@ msefun(percinc, etas, rn)
 \arguments{
 \item{percinc}{results for percent increase}
 
-\item{etas}{vector of % increases for health effects}
+\item{etas}{vector of percent increases for health effects}
 
 \item{rn}{rownames}
 }
