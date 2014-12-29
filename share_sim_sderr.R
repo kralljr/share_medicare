@@ -37,7 +37,7 @@ load("data_share_sim_revisedcombo.RData")
 #universal values
 ns <- 100
 nd <- 1000
-seeds1 <- c(4658, 4260, 8656, 8745)
+seeds1 <- c(4658, 4260, 8656, 8745, 5075)
 mon <- 25
 reg <- 5
 
@@ -49,7 +49,7 @@ day1 <- NULL
     
 set.seed(seeds1[seed])
 
-sderrs <- c(0.001, 0.1, 0.5)
+sderrs <- c(0.001, 0.1, 0.5, 1, 10)
 sderr1 <- sderrs[seed]
 
 simout <- multsims(nsims = ns, names = names, 
