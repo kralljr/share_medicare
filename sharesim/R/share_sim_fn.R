@@ -421,12 +421,12 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 	y <- hospdat(source, betas, shareT, int)
 
 	#match share to PCs
-	match1 <- as.vector(solve_LSAP(angle(PCs, reg)))
+	match1 <- solveLSAP_nc(PCs, reg) 
 	regnames1 <- names[match1]
 
 	
 	#match mAPCA to PCs
-	match1 <- as.vector(solve_LSAP(angle(PCs, mapca)))
+	match1 <- solveLSAP_nc(PCs, mapca) 
 	regnames2 <- names[match1]
 
     #get regional health effects
