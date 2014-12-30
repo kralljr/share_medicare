@@ -49,7 +49,7 @@ day1 <- NULL
     
 set.seed(seeds1[seed])
 
-sderrs <- c(0.001, 0.1, 0.5, 1, 10)
+sderrs <- c(0.001, 0.1, 0.5)
 sderr1 <- sderrs[seed]
 
 simout <- multsims(nsims = ns, names = names, 
