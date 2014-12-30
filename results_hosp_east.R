@@ -97,6 +97,9 @@ res <- res[complete.cases(res), ]
 lb1 <- -1
 ub1 <- 2
 
+# lb1 <- -2
+# ub1 <- 4
+
 res$lag <- factor(res$lag, levels = c("lag0", "lag1", "lag2"), 
                    labels = c("Lag 0", "Lag 1", "Lag 2"))
 res$method <- factor(res$method, levels = c("share", "mapca"), 
@@ -132,7 +135,7 @@ res$source <- factor(res$source, levels = ord1)
 
 
 
-
+#save(res, file = "hospeast_year.RData")
 
 
 
