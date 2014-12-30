@@ -67,12 +67,11 @@ share <- sharehealth(data.rr, healthdata = healthdat,
     tots = pm25, list = unmonlist, 
     formula = form1, lag = lagi, groupvar = gv)
     
-iqrs <- share$summary[, "IQR"]
     
 mapca <- sharehealth(data.rr, healthdata = healthdat, 
     tots = pm25, 
     list = unmonlist, method = "mapca", 
-        formula = form1, iqrs = iqrs, lag = lagi, groupvar = gv)
+        formula = form1, lag = lagi, groupvar = gv)
 
 
 
