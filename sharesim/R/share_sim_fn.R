@@ -83,12 +83,12 @@ outerSIM <- function(names, nmons, reps, ndays, PCs, keeps,
     
     
     #match share to PCs
-    match1 <- as.vector(solve_LSAP(angle(PCs, major.sig)))
+    match1 <- solveLSAP_nc(PCs, major.sig) 
     regnames1 <- names[match1]
     
     
     #match mAPCA to PCs
-    match1 <- as.vector(solve_LSAP(angle(PCs, mapca)))
+    match1 <- solveLSAP_nc(PCs, mapca) 
     regnames2 <- names[match1]
     
     
@@ -143,6 +143,23 @@ outerSIM <- function(names, nmons, reps, ndays, PCs, keeps,
     
 }
 
+
+
+
+#### # Function to get match 
+solveLSAP_nc <- function(pcs, major) {
+	ang1 <- angle(PCs, major.sig)
+	
+	nr <- nrow(ang1)
+    ns <-  nrow(ang1) - ncol(ang1)
+    if(ns > 0) {
+		adds <- matrix(rep(100, nr * ns), nrow = nr, ncol = ns)	
+		ang1 <- cbind(ang1, adds)
+	}
+	
+	as.vector(solve_LSAP(ang1))
+
+}
 
 
 ######
