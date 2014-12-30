@@ -32,7 +32,8 @@ sharem <- share1[[1]]$major.sig
 mapcam <- mapca1[[1]]$major.sig
 matches <- whichCS(matchfun(list(sharem), mapcam, thres = 70 * pi/180)$match[[1]])
 
-
+names1 <- rownames(sharem)
+apply(sharem, 2, function(x) names1[order(abs(x), decreasing = T)[1 : 5]])
 
 
 names1 <- c("Metals","Soil", "Sec. Sulfate","Fireworks", 
@@ -124,10 +125,10 @@ limits <- aes(ymax = ub, ymin= lb)
 
 s1 <- c("Metals", "Traffic", "Residual oil", "Soil", "Salt", "Sec. Sulfate")
 
-est <- share1[[1]]$iqrinc[[1]]
+est <- share1[[1]]$iqrinc
 rownames(est) <- capitalize(names1)
 est <- est[rownames(est) %in% s1, , drop = F]
-ord1 <- rownames(est)[order(est, decreasing = T)]
+ord1 <- rownames(est)[order(est[, 1], decreasing = T)]
 
 res <- res[which(res$source %in% s1), ]
 
@@ -208,16 +209,16 @@ gplot1 <- function(lag, dat = tln3, nc = 1) {
 
 
 setwd(plot.dir)
-pdf("hosp_east_lag012.pdf", height = 10, width = 7)
+# pdf("hosp_east_lag012.pdf", height = 10, width = 7)
 gplot1(c(0,1, 2), dat = res)
-graphics.off()
+# graphics.off()
 
 
 
 setwd(plot.dir)
-pdf("hosp_east_lag0.pdf", height = 7, width = 10)
-gplot1(c(0), dat = res)
-graphics.off()
+# pdf("hosp_east_lag0.pdf", height = 7, width = 10)
+# gplot1(c(0), dat = res)
+# graphics.off()
 
 
 # ###########	

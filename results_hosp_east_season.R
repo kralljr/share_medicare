@@ -170,10 +170,10 @@ limits <- aes(ymax = ub, ymin= lb)
 
 s1 <- c("Metals", "Traffic", "Residual oil", "Soil", "Salt", "Sec. Sulfate")
 
-est <- share1[[1]][[1]]$iqrinc[[1]]
+est <- share1[[1]][[1]]$iqrinc
 rownames(est) <- capitalize(names.cold)
 est <- est[rownames(est) %in% s1, , drop = F]
-ord1 <- rownames(est)[order(est, decreasing = T)]
+ord1 <- rownames(est)[order(est[, 1], decreasing = T)]
 
 res <- res[which(res$source %in% s1), ]
 
@@ -259,9 +259,9 @@ gplot1 <- function(lag, dat = tln3, nc = 1) {
 
 
 setwd(plot.dir)
-pdf("hosp_east_lag0_season.pdf", height = 7, width = 7)
+#pdf("hosp_east_lag0_season.pdf", height = 7, width = 7)
 gplot1(c(0),  dat = resall, nc = 2)
-graphics.off()
+#graphics.off()
 
 
 
