@@ -103,8 +103,7 @@ names(healthdat) <- fips
 
 ########
 # Perform SHARE and mAPCA
-form1 <- "factor(agecat) + factor(dow) + ns(tmpd, df = 6) + ns(tmp3, df = 6)  + ns(dptp, df = \
-3) + ns(dpt3, df = 3) + ns(date, df = 8 * "
+form1 <- "factor(agecat) + factor(dow) + ns(tmpd, df = 6) + ns(tmp3, df = 6)  + ns(dptp, df = 3) + ns(dpt3, df = 3) + ns(date, df = 8 * "
 gv <- "agecat"
 
 
