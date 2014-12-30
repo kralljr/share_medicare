@@ -534,7 +534,7 @@ tlnout <- function(unsources, y, sourceconc, type, share = NULL, print = F) {
 		}#end loop over monitors
 		
         #combine results across monitors
-	    glm <- glm[complete.cases(glm),]
+	    glm <- glm[complete.cases(glm),,drop = F]
     	if(nrow(glm) > 1) {
 		
 	    	temp <- tlniseC(Y = glm[, 1], V = glm[, 2]^2, prnt = print, brief = 2)
