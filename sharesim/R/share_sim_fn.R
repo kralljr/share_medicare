@@ -415,13 +415,16 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 	tlnmAPCA <- tlnmAPCA[match(rownames(tlntruth), rownames(tlnmAPCA)), ]
 	
 	#get IQR increase
-    tlnAPCApi <- matrix(nrow = nrow(tlnAPCA), ncol = ncol(tlnAPCA))
-	tlnmAPCApi <- matrix(nrow = nrow(tlnmAPCA), ncol = ncol(tlnmAPCA))
-	tlntruthpi <- matrix(nrow = nrow(tlntruth), ncol = ncol(tlntruth))
+    tlnAPCApi <- matrix(nrow = nrow(tlnAPCA), ncol = 3)
+	tlnmAPCApi <- matrix(nrow = nrow(tlnmAPCA), ncol = 3)
+	tlntruthpi <- matrix(nrow = nrow(tlntruth), ncol = 3)
+	colnames(tlnAPCApi) <- c("est", "lb", "ub")
+	colnames(tlnmAPCApi) <- c("est", "lb", "ub")
+	colnames(tlntruthpi) <- c("est", "lb", "ub")
 	for(i in 1 : nrow(tlntruth)) {
-		tlnAPCApi[i, ] <- percinc(tlnAPCA[i, ], scale = iqrs[i])
-		tlnmAPCApi[i, ] <- percinc(tlnmAPCA[i, ], scale = iqrs[i])
-		tlntruthpi[i, ] <- percinc(tlntruth[i, ], scale = iqrs[i])
+		tlnAPCApi[i, ] <- percincCI(tlnAPCA[i, ], scale = iqrs[i])
+		tlnmAPCApi[i, ] <- percincCI(tlnmAPCA[i, ], scale = iqrs[i])
+		tlntruthpi[i, ] <- percincCI(tlntruth[i, ], scale = iqrs[i])
 	}
     
     out1 <- list(truth = tlntruth, APCA = tlnAPCA, mAPCA = tlnmAPCA)
@@ -432,7 +435,13 @@ outerSIMhosp <- function(names, nmons, reps, ndays, PCs, keeps,
 
 
 
-
+#### function to get CI for percinc
+percincCI <- function(x, scale = 1) {
+	lb <- x[1] - 1.96 * x[2]
+	ub <- x[1] + 1.96 * x[2]
+	cis <- c(x[1], lb, ub)
+	percinc(cis, scale = scale)
+}
 
 
 #### function to find match for each row
@@ -631,7 +640,9 @@ msefun <- function(percinc, etas, rn)  {
     colnames(mses1) <- names(percinc[[1]])
 
     for(i in 1 : 3) {
+    		#select estimates
         saps1 <- sapply(percinc, function(x) x[[i]][, 1])
+        #difference from truth
         temp1 <- (sweep(saps1, 1, etas))^2
         mses1[, i] <- apply(temp1, 1, mean, na.rm = T, trim = 0.1)
     }
