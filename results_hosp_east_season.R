@@ -66,6 +66,9 @@ names1 <- c("Metals","Soil", "Sec. Sulfate","Fireworks",
 sumfun <- function(x, iqrs, matches, names, type = "share") {
     #x <- x$iqrinc
     x <- x$regcoef
+    lb <- x[, 1] - 1.96 * x[, 2]
+    ub <- x[, 1] + 1.96 * x[, 2]
+    x <- data.frame(x[, 1], lb, ub)
     
     if(type == "share") {
         #x <- data.frame(x[[1]], x[[2]])
@@ -81,7 +84,7 @@ sumfun <- function(x, iqrs, matches, names, type = "share") {
     
     rownames(x) <- NULL
     x <- data.frame(names, x)
-    colnames(x) <- c("source", "est", "se")
+    colnames(x) <- c("source", "est", "lb", "ub")
     x
 }
 
@@ -92,15 +95,15 @@ ishare.cold <- ldply(sapply(share1[[1]], sumfun, iqrs = iqrs[[1]],
 	matches = matches.cold, names = names.cold, simplify = F), data.frame)
 imapca.cold <- ldply(sapply(mapca1[[1]], sumfun, iqrs = iqrs[[1]],
 	matches = matches.cold, names = names.cold, type = "mapca", simplify = F), data.frame)
-colnames(ishare.cold) <- c("lag","source",  "est", "se")
-colnames(imapca.cold) <- c("lag", "source", "est", "se")
+colnames(ishare.cold)[1] <- "lag"
+colnames(imapca.cold)[1] <- "lag"
 
 ishare.warm <- ldply(sapply(share1[[2]], sumfun, iqrs = iqrs[[2]], 
 	matches = matches.warm, names = names.warm, simplify = F), data.frame)
 imapca.warm <- ldply(sapply(mapca1[[2]], sumfun, iqrs = iqrs[[2]],
 	matches = matches.warm, names = names.warm, type = "mapca", simplify = F), data.frame)
-colnames(ishare.warm) <- c("lag","source",  "est", "se")
-colnames(imapca.warm) <- c("lag", "source", "est", "se")
+colnames(ishare.warm)[1] <- "lag"
+colnames(imapca.warm)[1] <- "lag"
 
 res <- list(ishare.cold, imapca.cold)
 names(res) <- c("share", "mapca")
@@ -119,10 +122,6 @@ res <- ldply(res, data.frame)
 colnames(res)[1] <- "season"
 
 
-lb <- res$est - 1.96 * res$se
-ub <- res$est + 1.96 * res$se
-
-res <- data.frame(res, lb, ub)
 
 
 

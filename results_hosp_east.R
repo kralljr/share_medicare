@@ -40,7 +40,10 @@ names1 <- c("Metals","Soil", "Sec. Sulfate","Fireworks",
 iqrs <- share$summary[, "IQR"]
 sumfun <- function(x, type = "share") {
     #x <- x$iqrinc
-    x <- x$regcoef
+    x <- x$regcoef    
+    lb <- x[, 1] - 1.96 * x[, 2]
+    ub <- x[, 1] + 1.96 * x[, 2]
+    x <- data.frame(x[, 1], lb, ub)
     
     if(type == "share") {
         #x <- data.frame(x[[1]], x[[2]])
@@ -53,13 +56,14 @@ sumfun <- function(x, type = "share") {
     }
     
     x <- data.frame(names1, x)
-    colnames(x) <- c("source", "est", "se")
+    colnames(x) <- c("source", "est", "lb", "ub")
     x
 }
 ishare <- ldply(sapply(share1, sumfun, simplify = F), data.frame)
 imapca <- ldply(sapply(mapca1, sumfun, type = "mapca", simplify = F), data.frame)
-colnames(ishare) <- c("lag","source",  "est", "se")
-colnames(imapca) <- c("lag", "source", "est", "se")
+colnames(ishare)[1] <- "lag"
+colnames(imapca)[1] <- "lag"
+
 
 res <- list(ishare, imapca)
 names(res) <- c("share", "mapca")
@@ -67,10 +71,7 @@ res <- ldply(res, data.frame)
 colnames(res)[1] <- "method"
 
 
-lb <- res$est - 1.96 * res$se
-ub <- res$est + 1.96 * res$se
 
-res <- data.frame(res, lb, ub)
 
 
 
@@ -94,11 +95,11 @@ res <- data.frame(res, lb, ub)
 
 res <- res[complete.cases(res), ]
 
-lb1 <- -1
-ub1 <- 2
+ lb1 <- -1
+ ub1 <- 2
 
-# lb1 <- -2
-# ub1 <- 4
+#lb1 <- -2
+#ub1 <- 4
 
 res$lag <- factor(res$lag, levels = c("lag0", "lag1", "lag2"), 
                    labels = c("Lag 0", "Lag 1", "Lag 2"))
