@@ -156,7 +156,7 @@ outerSIM <- function(names, nmons, reps, ndays, PCs, keeps,
 
 #### # Function to get match 
 solveLSAP_nc <- function(pcs, major) {
-	ang1 <- angle(PCs, major.sig)
+	ang1 <- angle(pcs, major)
 	
 	nr <- nrow(ang1)
     ns <-  nrow(ang1) - ncol(ang1)
