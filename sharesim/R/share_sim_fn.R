@@ -95,6 +95,7 @@ outerSIM <- function(names, nmons, reps, ndays, PCs, keeps,
     l <- 1
     matches <- matrix(nrow = length(share), ncol = 2)
     lens <- matrix(nrow = length(share), ncol = 2)
+    overid <- matrix(nrow = length(share), ncol = 2)
     
     #for each monitor
     for(i in 1 : nmons) {
@@ -128,6 +129,8 @@ outerSIM <- function(names, nmons, reps, ndays, PCs, keeps,
             #how many potential matches (max)
             lens[i, j - 1] <- sapply(s2, length)[1]
             
+            overid[i, j - 1] <- length(which(is.na(s2[[j]])))
+            
         }
         
         #update subregion
@@ -140,6 +143,7 @@ outerSIM <- function(names, nmons, reps, ndays, PCs, keeps,
     #summarize
     out <- colSums(matches) / colSums(lens)
     
+    list(match = out, extra = overid)
     
 }
 
