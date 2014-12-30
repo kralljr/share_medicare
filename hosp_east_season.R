@@ -14,6 +14,7 @@ library(share)
 library(handles)
 library(sharesim)
 library(dplyr)
+library(splines)
 
 
 
@@ -120,7 +121,7 @@ mapca <- sharehealth(data.rr, healthdata = healthdat,
 
 
 
-save(share, mapca, file = paste("east_hosp_lag", lagi, 
+save(share, mapca, file = paste0("east_hosp_lag", lagi, 
 	"_seas", season, ".RData"))
 
 #########
