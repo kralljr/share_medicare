@@ -12,7 +12,7 @@ print(lagi)
 library(share)
 library(handles)
 library(sharesim)
-
+library(splines)
 
 
 
@@ -23,6 +23,7 @@ load("speciation_medicare.RData")
 data.rr <- lapply(datall, function(x) {
     x[, -c(2)]
 })
+names(data.rr) <- monsKEEP[, 3]
 pm25 <- lapply(datall, function(x) x[, 2])
 ##########
 
@@ -75,7 +76,7 @@ mapca <- sharehealth(data.rr, healthdata = healthdat,
 
 
 
-save(share, mapca, file = paste("east_hosp_lag", lagi, ".RData"))
+save(share, mapca, file = paste0("east_hosp_lag", lagi, ".RData"))
 
 #########
 
