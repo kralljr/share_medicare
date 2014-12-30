@@ -27,18 +27,22 @@ multsims <- function(nsims, names, nmons,
     
     
     outs <- matrix(nrow = nsims, ncol = 2)
+    extras <- matrix(nrow = nsims, ncol = 2)
     
     #for each simulation...
     for(i in 1 : nsims) {
         if(prnt) {print(i)}
-        outs[i, ] <- outerSIM(names, nmons, 
+        temp <- outerSIM(names, nmons, 
                               reps, ndays, PCs, keeps, 
                               cms, sds, unequal, days, 
                               cut, thres, sderr = sderr)
+        outs[i, ] <- temp[["match"]]  
+        extras[i, ] <- temp[["extra"]]                    
     }
     colnames(outs) <- c("SHARE", "mAPCA")
+    colnames(extras) <- c("SHARE", "mAPCA")
     
-    list(fulloutput = outs, summary = colMeans(outs))
+    list(fulloutput = outs, summary = colMeans(outs), extra = extras)
     
 }
 
@@ -143,7 +147,7 @@ outerSIM <- function(names, nmons, reps, ndays, PCs, keeps,
     #summarize
     out <- colSums(matches) / colSums(lens)
     
-    list(match = out, extra = overid)
+    list(match = out, extra = colMeans(overid))
     
 }
 
