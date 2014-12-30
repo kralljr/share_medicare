@@ -7,14 +7,12 @@ library(Hmisc)
 etas <- c(3, 1, 0.75, 0.5, 1, 1, 2)
 
 load("Asimhosp_multres.RData")
-outA <- out
 outAmult <- outmult
 
 mseA <- mse
 outAres <- outrest
 
 load("Bsimhosp_multres.RData")
-outB <- out
 outBmult <- outmult
 
 mseB <- mse
