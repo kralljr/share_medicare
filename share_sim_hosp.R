@@ -52,6 +52,7 @@ percinc1 <- sapply(outmult, function(x) x[[2]], simplify = F)
 iqrs <- apply(sapply(outmult, function(x) x[[3]]), 1, median)
 outrest <- gethospsim(regcoef, iqrs)[[2]]
 mse <- msefun(percinc1, etas, rownames(outmult[[1]][[1]][[1]]))
+#first iteration, percinc
 out <- outmult[[1]][[2]]
 
 
