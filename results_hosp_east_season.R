@@ -259,12 +259,16 @@ gplot1 <- function(lag, dat = tln3, nc = 1) {
 
 
 setwd(plot.dir)
-#pdf("hosp_east_lag0_season.pdf", height = 7, width = 7)
+pdf("hosp_east_lag0_season.pdf", height = 7, width = 7)
 gplot1(c(0),  dat = resall, nc = 2)
-#graphics.off()
+graphics.off()
 
 
 
+
+# check sig
+ressig <- resall[which(resall$lb > 0 | resall$ub < 0), ]
+ressig[order(ressig$source), ]
 
 # ###########	
 ###########	

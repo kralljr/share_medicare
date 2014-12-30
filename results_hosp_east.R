@@ -99,8 +99,8 @@ res <- res[complete.cases(res), ]
  lb1 <- -1
  ub1 <- 2
 
-#lb1 <- -2
-#ub1 <- 4
+# lb1 <- -2
+# ub1 <- 4
 
 res$lag <- factor(res$lag, levels = c("lag0", "lag1", "lag2"), 
                    labels = c("Lag 0", "Lag 1", "Lag 2"))
@@ -137,7 +137,7 @@ res$source <- factor(res$source, levels = ord1)
 
 
 
-#save(res, file = "hospeast_year.RData")
+# save(res, file = "hospeast_year.RData")
 
 
 
@@ -209,16 +209,16 @@ gplot1 <- function(lag, dat = tln3, nc = 1) {
 
 
 setwd(plot.dir)
-# pdf("hosp_east_lag012.pdf", height = 10, width = 7)
+pdf("hosp_east_lag012.pdf", height = 10, width = 7)
 gplot1(c(0,1, 2), dat = res)
-# graphics.off()
+graphics.off()
 
 
 
 setwd(plot.dir)
-# pdf("hosp_east_lag0.pdf", height = 7, width = 10)
-# gplot1(c(0), dat = res)
-# graphics.off()
+pdf("hosp_east_lag0.pdf", height = 7, width = 10)
+gplot1(c(0), dat = res)
+graphics.off()
 
 
 # ###########	
