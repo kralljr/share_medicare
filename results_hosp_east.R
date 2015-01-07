@@ -1,6 +1,6 @@
 # Health effects results for each
 
-setwd("~/Dropbox/SpatialFA/rcode/medicare/rdata")
+setwd("~/Dropbox/SpatialFA/rcode/rdata")
 plot.dir <- "~/Dropbox/SpatialFA/paper_spatialfa/figs/"
 
 
