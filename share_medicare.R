@@ -1,8 +1,8 @@
 #File to get SHARE information from Medicare data, apply mAPCA
 
 
-dir1 <- "/Users/jennakrall/Dropbox/SpatialFA/data"
-dircode <- "/Users/jennakrall/Dropbox/SpatialFA/rcode"
+dir1 <- "~/Dropbox/SpatialFA/data"
+dircode <- "~/Dropbox/SpatialFA/rcode"
 
 
 #source code
