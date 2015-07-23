@@ -97,7 +97,7 @@ colnames(res)[1] <- "method"
 res <- res[complete.cases(res), ]
 
  lb1 <- -1
- ub1 <- 2
+ ub1 <- 2.2
 
 # lb1 <- -2
 # ub1 <- 4
@@ -162,65 +162,53 @@ size1 <- 18
 sizep <- 1.2
 pd <- position_dodge(.4)
 
-
 #color
-col1 <- c("indianred3", col1[2])
+col1 <- brewer.pal(6, "Dark2")
+#col1 <- c("indianred3", col1[2], col1[1])
 #bw
-col1 <- c("black", "grey50")
-gplot1 <- function(lag, dat = tln3, nc = 1) {
+#col1 <- c("black", "grey50")
+gplot1 <- function(lag, dat = tln3, nc = 1, size1 = 10) {
     dat <- dat[which(dat$lag %in% paste("Lag", lag)), ]
     
     g1 <- ggplot(dat, aes(x = source, y = est, 
-    		colour = method, shape = method), 
+    		colour = source, shape = method), 
         	ylim = c(-0.01, 0.01)) + 
         geom_hline(aes(yintercept = 0), colour = "grey80", 
                    linetype = "dashed") +
         geom_pointrange(aes(ymin = lb2, 
-        	ymax = ub2, colour = method), 
+        	ymax = ub2, colour = source), 
             width = 0.1, position = pd, size = sizep) +
         theme_bw() + 
         scale_color_manual( labels=c("SHARE", "mAPCA"), 
-        	name = "", values = col1) + 
+        	name = "", values = col1, guide = F) + 
         scale_shape( labels=c("SHARE", "mAPCA"), 
-        	name = "") + 	
-        ylab(expression(atop("% increase in CVD hospitalizations per", 
-           	"IQR increase in source concentration"))) +
-        xlab("") +
-        # ggtitle("Mortality effects by\nsource apportionment method") +
-        scale_y_continuous(limits=c(lb1, ub1))      +         
+        	name = "", guide = F) + 	
+        #ylab(expression(atop("Percent increase in CVD hospitalizations", 
+         #  	"hospitalizations per IQR increase in PM source"))) +
+        ylab("Percent increase in hospitalizations")+
+	xlab("") +
+        #ggtitle("Percent increase in CVD hospitalizations per IQR increase in PM sources")+
+	scale_y_continuous(limits=c(lb1, ub1))      +         
         theme_bw() +  
         theme(axis.text.y=element_text(size=size1)) +
 
-        theme(axis.title=element_text(size=size1)) 
-    theme(legend.justification=c(1,0), 
-          legend.position=c(1,0)) # Position legend in bottom right
-    g1 <- g1 + theme(axis.text.x=element_text(size = size1, hjust = 1,
-                                              vjust = 1, angle = 45))
+        theme(axis.title=element_text(size=size1))  
+    g1 <- g1 + theme(axis.text.x=element_text(size = size1, angle = 90, hjust = 1, vjust = 0.5))
+    #, hjust = 1,         vjust = 1, angle = 45))
     g1 <- g1 + theme(strip.text.x = element_text(size = size1))
-    if(length(lag) > 1) {
-        g1 <- g1 + facet_wrap(~lag, ncol = nc) 
-    }
     g1 <- g1	+ theme(strip.text.y = element_text(size = size1))
     
     g1
 }
 
 
+# Restricted plot for K99
+setwd("~/Dropbox/K99")
+png("hosp_east_lag0_share.png", height = 900, width = 860, res = 300)
 
-
-setwd(plot.dir)
-pdf("hosp_east_lag012.pdf", height = 10, width = 7)
-gplot1(c(0,1, 2), dat = res)
-graphics.off()
-
-
-
-setwd(plot.dir)
-pdf("hosp_east_lag0.pdf", height = 7, width = 10)
-gplot1(c(0), dat = res)
-graphics.off()
-
-
+res2 <- dplyr::filter(res, method == "SHARE")
+gplot1(c(0), dat = res2) + theme(axis.title.y = element_text(hjust = 1))
+dev.off()
 # ###########	
 ###########	
 ###########	
