@@ -158,8 +158,12 @@ setwd(file.path(home.dir, "plots", "region_maps"))
 pdf("map_east_medicare.pdf", height = 7)
 map("state", col = "grey90",
 	ylim = c(36, 45), xlim = c(-90, -69), fill = T, 
-	mar = c(0, 5, 0, 0), oma = c(0,0,0,0), xlab = "Longitude",
-        ylab = "Latitude")
+	mar = c(0, 7, 0, 0), oma = c(0,0,0,0))
+
+line1 <- 2
+mtext("Latitude", side = 2, line = line1)
+
+mtext("Longitude", side = 1, line = line1)
 map.axes()	
 
 
