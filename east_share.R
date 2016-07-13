@@ -139,13 +139,22 @@ cols <- c(1, "grey50")
 # lwd1 <- 2
 # cex1 <- 3
 # cex2 <- 2
-# cols <- brewer.pal(8, "Dark2")
+cols <- brewer.pal(8, "Dark2")
 #cols <- c("darkolivegreen3", "orange")
+
+
+#set size, rev1
+cex1 <- 2.1
+cex2 <- 1.2
+#cols <- c("grey60", 1)
+
 
 m1 <- map("state", fill = TRUE, col = "grey60",
           ylim = c(36, 45), xlim = c(-90, -69),plot = F)
 
-pdf(file.path(paperdir, "map_east_sources.pdf"), height = 7, width = 11)
+
+pdf(file.path(paperdir, "map_east_sources-rev1.pdf"), height = 7, width = 11)
+#pdf(file.path(paperdir, "map_east_sources.pdf"), height = 7, width = 11)
 par(mfrow = c(3, 3), mar = c(4, 2.5, 1.4, 0),  oma = c(3,2,1,0))
 reps <- seq(1, 9)
 reps2 <- 0
@@ -160,24 +169,24 @@ Sources <- Sources[!is.infinite(Sources)]
 for(i in Sources) {
     plot(m1$x, m1$y, type = "l", xlim = c(-90, -69),
          ylim = c(36, 45), xlab = "", ylab = "", 
-         cex.axis = 2, axes = F, col = "grey70")
+         cex.axis = 2, axes = F, col = "grey80")
     keeps <- sapply(share$share, function(x) {
         ifelse(i %in% x, 1, 0)
     })
     wh1 <- which(keeps == 1)
-    mtext(names[i], cex = 2)
+    mtext(names[i], cex = 1.5)
     points(monsKEEP[-wh1, c(2, 1)],  col = cols[1], pch = "+", cex = cex1)
-    points(monsKEEP[wh1, c(2, 1)],  col = cols[2], pch = 16, cex = cex2)
+    points(monsKEEP[wh1, c(2, 1)],  col = cols[2], pch = 1, cex = cex2)
     if(i == 8) {
         
         par(xpd = T)
         legend(-87, 35.5, col = c(cols[2], cols[1]), 
                legend = c("Source found", "Source not found"), 
-               pch = c(16, 3), cex = 1.5, border = NULL, bty = "n")   
+               pch = c(1, 3), cex = 1.5, border = NULL, bty = "n")   
         par(xpd = F)
 
     }
 }
 
 graphics.off()
-	
+
