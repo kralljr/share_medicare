@@ -96,7 +96,7 @@ colnames(res)[1] <- "method"
 
 res <- res[complete.cases(res), ]
 
- lb1 <- -1
+ lb1 <- -2
  ub1 <- 2
 
 # lb1 <- -2
@@ -177,7 +177,7 @@ gplot1 <- function(lag, dat = tln3, nc = 1) {
                    linetype = "dashed") +
         geom_pointrange(aes(ymin = lb2, 
         	ymax = ub2, colour = method), 
-            width = 0.1, position = pd, size = sizep) +
+            position = pd, size = sizep) +
         theme_bw() + 
         scale_color_manual( labels=c("SHARE", "mAPCA"), 
         	name = "", values = col1) + 
@@ -209,7 +209,8 @@ gplot1 <- function(lag, dat = tln3, nc = 1) {
 
 
 setwd(plot.dir)
-pdf("hosp_east_lag012.pdf", height = 10, width = 7)
+#pdf("hosp_east_lag012.pdf", height = 10, width = 7)
+pdf("hosp_east_lag012-rev1.pdf", height = 10, width = 7)
 gplot1(c(0,1, 2), dat = res)
 graphics.off()
 
