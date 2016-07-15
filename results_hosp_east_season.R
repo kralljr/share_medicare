@@ -1,6 +1,6 @@
 # Health effects results for each
 
-setwd("~/Dropbox/SpatialFA/rcode/medicare/rdata")
+setwd("~/Dropbox/SpatialFA/rcode/rdata")
 plot.dir <- "~/Dropbox/SpatialFA/paper_spatialfa/figs/"
 
 
@@ -143,8 +143,8 @@ colnames(res)[1] <- "season"
 
 res <- res[complete.cases(res), ]
 
-lb1 <- -2
-ub1 <- 4
+lb1 <- -1
+ub1 <- 3.5
 
 res$lag <- factor(res$lag, levels = c("lag0", "lag1", "lag2"), 
                    labels = c("Lag 0", "Lag 1", "Lag 2"))
@@ -185,8 +185,15 @@ load("hospeast_year.RData")
 res <- data.frame(rep("Year", nrow(res)), res)
 colnames(res)[1] <- "season"
 
-resall <- merge(res, res1, all = T)
+# fix limits
+ub2b <- ifelse(res$ub >ub1, Inf, res$ub)
+lb2b <- ifelse(res$lb < lb1, -Inf, res$lb)
 
+res <- mutate(res, ub2 = ub2b, lb2 = lb2b)
+
+
+#resall <- merge(res, res1, all = T)
+resall <- full_join(res, res1)
 
 
 
@@ -203,14 +210,17 @@ resall <- merge(res, res1, all = T)
 ########
 ### PLOT RESULTS
 
+resall2 <- resall[-which(resall$source == "Metals" & resall$method == "SHARE" & resall$season == "Cold"), ]
 
-resall <- resall[-which(resall$source == "Metals" & resall$method == "SHARE" & resall$season == "Cold"), ]
 
 
 
 size1 <- 18
 sizep <- 1.2
 pd <- position_dodge(.6)
+
+resall2$season <- factor(resall2$season, levels = c("Year", "Cold", "Warm"))
+resall2$source <- factor(resall2$source, levels = c("Traffic", "Metals", "Salt", "Sec. Sulfate", "Soil", "Residual oil"))
 
 
 #color
@@ -221,13 +231,12 @@ gplot1 <- function(lag, dat = tln3, nc = 1) {
     dat <- dat[which(dat$lag %in% paste("Lag", lag)), ]
     
     g1 <- ggplot(dat, aes(x = method, y = est, 
-    		colour = season, shape = season), 
-        	ylim = c(-0.01, 0.01)) + 
+    		colour = season, shape = season)) + 
         geom_hline(aes(yintercept = 0), colour = "grey80", 
                    linetype = "dashed") +
         geom_pointrange(aes(ymin = lb2, 
         	ymax = ub2, colour = season), 
-            width = 0.1, position = pd, size = sizep) +
+            position = pd, size = sizep) +
         theme_bw() + 
         scale_color_manual( labels=c("Year", "Cold", "Warm"), 
         	name = "", values = col1) + 
@@ -237,7 +246,7 @@ gplot1 <- function(lag, dat = tln3, nc = 1) {
            	"IQR increase in source concentration"))) +
         xlab("") +
         # ggtitle("Mortality effects by\nsource apportionment method") +
-        #scale_y_continuous(limits=c(lb1, ub1))      +         
+        scale_y_continuous(limits=c(lb1, ub1))      +         
         theme_bw() +  
         theme(axis.text.y=element_text(size=size1)) +
 
@@ -248,7 +257,7 @@ gplot1 <- function(lag, dat = tln3, nc = 1) {
                                               vjust = 1, angle = 45))
     g1 <- g1 + theme(strip.text.x = element_text(size = size1))
     #if(length(lag) > 1) {
-        g1 <- g1 + facet_wrap(~source, scales = "free_y", ncol = nc) 
+        g1 <- g1 + facet_wrap(~source, ncol = nc) 
     #}
     g1 <- g1	+ theme(strip.text.y = element_text(size = size1))
     
@@ -259,15 +268,16 @@ gplot1 <- function(lag, dat = tln3, nc = 1) {
 
 
 setwd(plot.dir)
-pdf("hosp_east_lag0_season.pdf", height = 7, width = 7)
-gplot1(c(0),  dat = resall, nc = 2)
+#pdf("hosp_east_lag0_season.pdf", height = 7, width = 7)
+pdf("hosp_east_lag0_season-rev1.pdf", height = 7, width = 7)
+gplot1(c(0),  dat = resall2, nc = 2)
 graphics.off()
 
 
 
 
 # check sig
-ressig <- resall[which(resall$lb > 0 | resall$ub < 0), ]
+ressig <- resall2[which(resall2$lb > 0 | resall2$ub < 0), ]
 ressig[order(ressig$source), ]
 
 # ###########	
